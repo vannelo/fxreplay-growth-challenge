@@ -22,7 +22,7 @@ Before writing code, list the component tree and the JS you expect to ship to th
 ```
 Build the signup form as an explicit state machine: idle | validating | submitting | success | fieldError | serverError | networkError.
 Use the shared zod schema from @src/contracts/users.ts for client validation. Calls POST /api/users with an idempotency key
-generated once per form session. Requirements:
+reused ONLY for an exact retry of the same payload after a network error or 5xx; generate a NEW key whenever the payload changes or after any definitive 4xx (409/422), otherwise the server rejects it as idempotency_key_reuse. Requirements:
 - inline field errors linked via aria-describedby; focus moves to first invalid field on submit failure
 - aria-live="polite" region announces submitting / success / error
 - disable double-submit; preserve user input on every error; retry affordance on network error

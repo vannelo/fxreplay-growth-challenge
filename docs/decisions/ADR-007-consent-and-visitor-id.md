@@ -7,7 +7,7 @@
 ## Context
 - CLAUDE.md rule 5 required "consent-aware" analytics, but the draft plan had no consent model.
 - The conversion event (`signup_succeeded`) is emitted **server-side** (ADR-005). To attribute it to the same visitor and experiment arm as the client events, the server needs a visitor id and the variant.
-- The landing page is prerendered and cacheable, so a per-visitor id **cannot be embedded in the HTML**; it has to be a cookie that middleware sets and client JS can read.
+- The landing page was assumed prerendered and cacheable, so a per-visitor id **cannot be embedded in the HTML**; it has to be a cookie that client JS can read. (Amended: the challenge build now renders the page on demand, see ADR-004 and the amendment note below; the cookie design is kept so the production path is identical.)
 - Experiment bucketing (ADR-004) already needs a sticky per-visitor assignment.
 - I don't know FX Replay's legal position, audience geography, or consent-management tooling. I won't invent them.
 
@@ -29,7 +29,8 @@
 - **Legal risk is accepted knowingly, not solved.** Whether a first-party bucketing/analytics cookie is "strictly necessary" depends on jurisdiction and counsel. If legal says no, the production fallback is below.
 - **Both identifiers are client-controlled.** A user can edit `fxr_vid` or `fxr_variant`, or send any `X-Visitor-Id`. The result can only pollute analytics attribution (nothing is authorized on it). v1 leaves the cookies unsigned. Production would sign the variant (HMAC) and treat the visitor id as untrusted.
 - **Cookie-blocking visitors are unattributed:** no id → the server emits `signup_succeeded` under the user's id with `variant: "unattributed"`. Report that share; if it's material, investigate.
-- **`Set-Cookie` on the HTML response interacts with CDN caching** of the prerendered variants. How middleware sets the cookie without making every page response uncacheable is **an open item for ADR-004**, not solved here.
+- **`Set-Cookie` and CDN caching: resolved by ADR-004 (amended 2026-11-11).** Astro middleware does not run for prerendered pages on Vercel, so the landing page is rendered on demand for the challenge build and its responses are `Cache-Control: private, no-store` (cookies set by Astro middleware). Production would use an edge rewrite to two prerendered variants, with the cookies set at the edge. Cookie names, flags and semantics in this ADR are unchanged on both paths.
+- *Amendment note:* with an on-demand page the server **could** embed the visitor id in the HTML and the cookie could be `HttpOnly`. I'm deliberately keeping it JS-readable so the challenge build and the production (prerendered) path behave identically.
 - Visitors who clear cookies are new visitors (inflates unique visitors slightly; same for both arms).
 
 ## What would change this at FX Replay production scale

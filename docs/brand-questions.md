@@ -21,7 +21,7 @@ Source: `brand-kit.html` (repo copy). Companion: `tokens.proposal.css`. Contrast
 | text-secondary / bg-primary | 13.51 | pass |
 | text-disabled (#888) / bg-primary | 5.82 | pass (but disabled text is exempt anyway) |
 | **text-brand (blue-600) / bg-primary** | **4.02** | **FAIL AA for normal text**; OK only for large text (≥24px / 18.66px bold) and UI components (3:1) |
-| blue-500 / bg-primary | 5.26 | pass: use for brand-coloured text/links |
+| blue-500 / bg-primary | 5.26 | pass on the page; **4.44 on card-bg-secondary (dark-700): fails**. Use blue-400 for inline brand text/links on both surfaces (`--text-link` in `src/styles/tokens.css`) |
 | btn-text / btn-primary (blue-600) | 4.75 | pass, narrowly; pure white gives 5.13 |
 | btn-text / hover (blue-800), pressed (blue-900) | 11.2 / 14.6 | pass |
 | btn-text-disabled / btn-secondary-disabled | 2.65 | fail, but disabled controls are exempt from 1.4.3 |

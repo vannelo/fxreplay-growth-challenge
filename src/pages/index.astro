@@ -1,0 +1,34 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import Section from '../components/Section.astro';
+import FinalCta from '../components/FinalCta.astro';
+import Footer from '../components/Footer.astro';
+
+// On demand so middleware runs per request and assigns the experiment variant (ADR-004).
+export const prerender = false;
+
+const { variant } = Astro.locals;
+---
+
+<Layout
+  title="Try FX Replay Free"
+  description="FX Replay lets forex traders replay historical price action to practice and test trading strategies. Create a free account to try it."
+>
+  <Header />
+  <main id="main">
+    <Hero variant={variant} />
+    <Section id="practice" title="Practice on the past">
+      Step through historical forex price action as if the market were live, and make your decisions without waiting around for the next setup.
+    </Section>
+    <Section id="test" title="Test a strategy before you trust it">
+      Run your approach against past market conditions to see how it would have played out, then adjust and try again.
+    </Section>
+    <Section id="habit" title="Build a consistent habit">
+      Short, repeatable sessions make it easier to keep practising, whatever your schedule looks like.
+    </Section>
+    <FinalCta />
+  </main>
+  <Footer />
+</Layout>

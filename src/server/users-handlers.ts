@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { z } from 'zod';
+import type * as z from 'zod/mini';
 import {
   CreateUserBody,
   CreateUserHeaders,
@@ -44,7 +44,7 @@ const invalidFields = (fields: Record<string, string[]>) =>
   new ApiError('validation_error', 'Some fields are invalid', fields);
 
 /** One 422 for everything wrong with a request (body, headers, params, query), not one problem at a time. */
-function validationError(...errors: Array<z.ZodError | undefined>): ApiError {
+function validationError(...errors: Array<z.core.$ZodError | undefined>): ApiError {
   const fields: Record<string, string[]> = {};
   for (const error of errors) {
     if (!error) continue;

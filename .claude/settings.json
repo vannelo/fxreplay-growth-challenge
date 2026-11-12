@@ -3,7 +3,21 @@
     "allow": [
       "Bash(npm install *)",
       "Bash(npx astro *)",
-      "Bash(pkill -f \"vitest run --root /\")"
+      "Bash(pkill -f \"vitest run --root /\")",
+      "WebFetch(domain:docs.astro.build)",
+      "Bash(python3 -I -)",
+      "Bash(xargs grep -nE \"#[0-9a-fA-F]{3,8}\\\\b|rgba?\\\\\\(|hsla?\\\\\\(\")",
+      "Bash(:)",
+      "Bash(curl -s -o /dev/null -w '%{time_starttransfer}\\\\n' localhost:4422/)",
+      "Bash(awk '{a[NR]=$1}END{print \"n=\"NR,\"min=\"a[1],\"med=\"a[int\\(NR/2\\)+1],\"p90=\"a[int\\(NR*0.9\\)],\"max=\"a[NR]}')",
+      "Bash(curl -s -o /dev/null -b 'fxr_vid=c155ffdd-c95b-45ea-9511-ced95d4f1f4f; fxr_variant=control' -w '%{time_starttransfer}\\\\n' localhost:4422/)",
+      "Bash(curl -s -o /dev/null -w '%{time_starttransfer}\\\\n' localhost:4422/_astro/index.C_oWL-jw.css)",
+      "mcp__playwright__browser_run_code_unsafe",
+      "Bash(node -e ' *)",
+      "Bash(curl -s localhost:4422/)",
+      "Bash(curl -s -m 10 -o /dev/null -w \"GET localhost:4399/ -> %{http_code}\\\\n\" localhost:4399/)",
+      "Bash(curl -s -m 10 localhost:4399/)",
+      "Bash(ps -p 66417 -o pid,etime,command)"
     ]
   }
 }

@@ -1,0 +1,36 @@
+---
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Only the weights the above-the-fold text needs are preloaded: the h1 (Lato 900) and body copy (Nunito Sans 400). -->
+    <Font cssVariable="--font-lato" preload={[{ weight: 900, style: 'normal', subset: 'latin' }]} />
+    <Font cssVariable="--font-nunito-sans" preload={[{ weight: 400, style: 'normal', subset: 'latin' }]} />
+  </head>
+  <body>
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-btn-primary focus:px-4 focus:py-2 focus:text-btn-text"
+    >
+      Skip to content
+    </a>
+    <slot />
+  </body>
+</html>

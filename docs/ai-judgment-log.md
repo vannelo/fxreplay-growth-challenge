@@ -20,8 +20,57 @@ Copy the template below, paste at the top of the entries section, fill it in rig
 ```
 
 ## Entries
+### 2026-11-12 12:35 — Landing page + signup island: AI errors caught by tests and measurement
+- **Phase / agent:** Phase 3 (UI), main thread (plan mode first). `a11y-auditor` and `perf-auditor` run after this entry; their findings get their own entry.
+- **Delegated:** build the page, the island, the state machine, middleware, e2e/unit tests, and the G2 hydration measurement from the approved plan.
+- **My judgment:** pending my read of the diff. Facts below are what the AI itself got wrong or found, and what exposed it.
+  - **Real bug in the AI's component, found by the measurement (not by a test I asked for):** controlled inputs wiped text typed before hydration (5 of 30 runs lost it). Fixed (uncontrolled inputs + adopt DOM values on mount). A deterministic regression test was added, and it was **verified to fail with the bug put back** (`Received: ""`) and pass without it.
+  - **Latent AA failure in the AI's own token choice, found by the contrast test:** `--text-link` = blue-500 is 4.44:1 on the form card. axe never saw it because the 409 sign-in link isn't rendered until the URL exists. Switched to blue-400 (an existing primitive). Also removed a raw-hex `theme-color` meta that the hygiene test flagged.
+  - **Wrong assumption retracted:** the plan expected `astro preview` to work with the Vercel adapter; it does not (ADR-008, Node adapter for e2e). Earlier I had also assumed the origin check was irrelevant to forms: observed instead, a cross-origin form POST gets **403** from Astro's check and a same-origin one gets our **415** (source read: only form-like content types are checked; there is a TODO to check all unsafe requests in Astro 8).
+  - **Docs vs installed source:** the Fonts docs page doesn't show per-weight preload, but the installed `filterPreloads` supports `{ weight, style, subset }`, so the layout preloads only Lato 900 and Nunito Sans 400.
+  - **My own estimates were off and were corrected in the log:** `zod/mini` for the real contract measured 13.8 KB in scratch (not the 6.4 KB first quoted); the real build's whole client JS is ~21.5 KB gzip.
+  - **Test-writing mistakes by the AI, caught by running them:** a test that didn't pin its experiment arm (flaky ~50%, found with `--repeat-each=15`), an illegal cookie value, a strict-mode locator hitting both the visible message and the live region, and a `ship-gate` skill that still described pnpm/lint/`astro preview` (fixed to match the repo; lint is reported as "not configured", not as passing).
+- **Validation:** 129 Vitest tests, 52 Playwright tests (26 × mobile + desktop, production build), `astro check` clean. **Mutation checks** on the state machine (always-reuse key, never-reuse key, no double-submit guard): 4, 4 and 2 tests failed respectively, so those tests can catch the bugs they name. axe has a **negative control** (a deliberately broken page produced contrast, alt, label, button-name and target-size violations), so "zero violations" is not an artefact of a broken helper.
+- **Not verified:** screen-reader behaviour (VoiceOver), real devices, Vercel-specific behaviour (headers, cookies, CORS preflight on the deployed adapter), anything about the copy (all `TODO(owner)` placeholders are still in).
+- **Commit:** n/a (not committed by the AI)
+
+### 2026-11-12 12:35 — Hydration measurement (G2): what the numbers say, and what they don't
+- **Phase / agent:** Phase 3 (UI), main thread
+- **Delegated:** measure `client:load` vs `client:idle` before choosing (my instruction), using the rule I pre-registered in the plan.
+- **Output (summary):** 15 runs per mode, Pixel 7 viewport, 4x CPU, 1.6 Mbps/150 ms RTT (`docs/measurements/hydration-run2.json`): time-to-hydrated median 1316.7 ms (`idle`) vs 1313.6 ms (`load`); LCP 652 vs 648 ms; TBT 0; worst interaction 32 ms; typed-text lost 0/15 in both after the fix. By my rule (median hydrated < 1 s required) both modes fail, so the rule says `client:load`.
+- **My judgment:** **proposed `client:load`, not yet confirmed by me.** It is a tie in practice (3 ms); I treat the choice as low-stakes and reversible, and ADR-006 is marked "proposed" for the directive. The temporary switch stays in the code until I confirm.
+- **Why it is not stronger:** lab only, n = 15, a single throttled profile; the INP proxy is quantized (constant 32 ms) and cannot separate the modes; the scripted "early press" landed after hydration, so **"0 dead presses" is not evidence**: the honest number is a ~0.67 s window where the button is visible but disabled, in both modes. My hypothesis that the 1.3 s is a module-chunk waterfall is **unverified**.
+- **Validation:** run 2's raw per-run data is saved (`docs/measurements/hydration-run2.json`) and `scripts/measure-hydration.mjs` reproduces it. The first run exposed the typed-text bug above; **its raw JSON was deleted by mistake during cleanup** and is not recoverable, so `docs/measurements/hydration-run1-notes.md` holds only the numbers transcribed from the console output at the time.
+- **Commit:** n/a
+
+### 2026-11-11 22:11 — Hydration strategy: decision is "measure before choosing"; zod client size measured
+- **Phase / agent:** Phase 3 (UI), main thread
+- **Delegated:** P4.1 docs research (hydration directives) and a size measurement of the shared contract in the browser bundle.
+- **Output (summary):** the docs do not say how `client:visible` behaves for a component already in the viewport. `client:idle` has a `timeout` option. The AI proposed `client:idle` + a disabled-until-hydrated submit button as the starting point.
+- **My judgment:** I decided **not to pick yet**: build the form, then measure `client:load` vs `client:idle` (hydration time and INP) and choose from the numbers. No hydration choice has been made and none is claimed here.
+- **Why:** `CLAUDE.md` allows `client:load` only when justified by a measurement; the hero form is above the fold, so an unmeasured `client:idle` could cost early interactions.
+- **Validation (zod size, AI-run, scratch project, esbuild, minified, gzip, not the real Astro/Vite build, so re-measure there):** the contract imported as-is = **95.4 KB gzip** (459 KB raw); an equivalent `zod/mini` body schema = **6.4 KB gzip**; Preact + a small `useReducer` island = **5.8 KB gzip**. Importing the full contract into the island would be ~16x the cost of the framework itself.
+- **Correction (after the G1 port to `zod/mini`):** the 6.4 KB figure was for a minimal email+name schema I wrote for the measurement, not the real contract. The real ported contract (the exports the island imports: `CreateUserBody`, `fieldErrorsFrom`, header constants) measures **13.8 KB gzip** in the same scratch setup, so about 7x smaller than classic zod but twice what the plan said. The 66 API tests pass unchanged on the port and `astro check` is clean. Still a scratch esbuild number; the real Astro build is the final measurement.
+- **Commit:** n/a
+
+### 2026-11-11 22:11 — Idempotency-key rule in my own P4.2 prompt was wrong (AI caught it, I fixed the prompt)
+- **Phase / agent:** Phase 3 (UI), main thread
+- **Delegated:** read P4.2 against the API contract before building.
+- **Output (summary):** the spec "idempotency key generated once per form session" breaks as written: after a 409/422 the user edits the email and resubmits; same key + different body = 422 `idempotency_key_reuse` (the server compares payload hashes).
+- **My judgment:** accepted; I corrected the prompt. Rule: reuse the key only for an exact retry of the same payload (network error, 5xx, 429); generate a new key when the payload changes or after a definitive 4xx.
+- **Validation:** the server half is already covered by an existing test ("same key with a different payload → 422 idempotency_key_reuse"). The client half has no test yet; a Playwright test for edit-and-resubmit after a 409 is in the build plan.
+- **Commit:** n/a
+
+### 2026-11-11 22:11 — Doc check caught a wrong assumption in my own ADRs: Astro middleware skips prerendered pages on Vercel
+- **Phase / agent:** Phase 3 (UI), main thread (docs research required by P4.1)
+- **Delegated:** read the current Astro/Vercel docs before planning the landing page.
+- **Output (summary):** the Vercel adapter page says its middleware runs for on-demand routes and "static assets and prerendered pages skip it". That contradicts the plan in ADR-007 (cookies set by middleware on a prerendered page), the ADR-004 draft in `00-process.md`, ADR-001 and `CLAUDE.md`. The AI-drafted ADR-007 had carried the same wrong assumption, and was corrected.
+- **My judgment:** the finding is the AI's, the resolution is mine: the landing page becomes on-demand (`prerender = false`) so middleware runs; production would use an edge rewrite to two prerendered variants. ADR-004 did not exist (only referenced), so it was **created**, and ADR-007 was **amended**. `CLAUDE.md` and ADR-001 still say "prerendered" and now conflict with ADR-004; not edited (pending my call).
+- **Validation:** a documentation quote only. Not yet verified in a running build or on Vercel. The plan makes a Playwright check against `astro build && preview` (cookie set on first visit, variant sticky, no cookie change on reload) the gate, and the Vercel behaviour still needs one deployed check.
+- **Commit:** n/a
+
 ### 2026-11-11 21:27 — Users API: tests first (red), implementation (green), and what the tests caught
-- **Phase / agent:** Phase 2 (build API), main thread (plan mode used first, per CLAUDE.md); `api-reviewer` is running separately (entry to follow when its report is read).
+- **Phase / agent:** Phase 2 (build API), main thread (plan mode used first, per CLAUDE.md); `api-reviewer` was launched but stopped before reporting, so **no independent review has happened yet**.
 - **Delegated:** P3.1 tests before implementation, P3.2 smallest implementation, P3.3 Vercel analysis.
 - **Prompt:** [docs/prompts/03-build-api.md](prompts/03-build-api.md)
 - **Output (summary):** 66 Vitest tests through the public handler interface; handlers, one error-mapping function, in-memory repository, two thin Astro route files.

@@ -1,6 +1,8 @@
 /**
  * Users API contract — single source of truth for client, server and tests.
  * Contract only: no I/O, no framework imports. Handlers and the signup island both parse with these schemas.
+ * Uses `zod/mini` (not classic `zod`): the island imports this file, and classic zod measured ~95 KB gzip in the
+ * browser bundle vs ~6 KB for mini (see ai-judgment-log.md, ADR-006). Behaviour is pinned by tests/api/users.test.ts.
  *
  * Conventions
  *  - Success bodies are wrapped: `{ data }` (single) or `{ data, nextCursor }` (list).
@@ -8,26 +10,25 @@
  *  - Schema validation failures are 422; malformed JSON is 400.
  *  - Email is normalized (trim + lowercase) *before* validation, so the stored/compared value is canonical.
  */
-import { z } from 'zod';
+import * as z from 'zod/mini';
 
 /** Max request body for mutating endpoints. A valid body is well under 1 KB (email ≤254 + name ≤80 chars). */
 export const MAX_BODY_BYTES = 4096;
 
 /* ---------- Field primitives ---------- */
 
-export const Email = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .pipe(z.email({ error: 'Enter a valid email address' }).max(254, { error: 'Email is too long' }));
+export const Email = z.pipe(
+  z.string().check(z.trim(), z.toLowerCase()),
+  z.email({ error: 'Enter a valid email address' }).check(z.maxLength(254, { error: 'Email is too long' })),
+);
 
 /** Optional on create. Blank is NOT accepted: clients omit the key instead of sending "". No control/format characters. */
-export const Name = z
-  .string()
-  .trim()
-  .min(1, { error: 'Name cannot be empty' })
-  .max(80, { error: 'Name is too long (max 80)' })
-  .regex(/^[^\p{C}]*$/u, { error: 'Name contains invalid characters' });
+export const Name = z.string().check(
+  z.trim(),
+  z.minLength(1, { error: 'Name cannot be empty' }),
+  z.maxLength(80, { error: 'Name is too long (max 80)' }),
+  z.regex(/^[^\p{C}]*$/u, { error: 'Name contains invalid characters' }),
+);
 
 /* ---------- Analytics attribution header (ADR-007) ---------- */
 
@@ -40,14 +41,14 @@ export const VISITOR_ID_HEADER = 'X-Visitor-Id';
  * Client-supplied, therefore untrusted: it may only ever be used as an analytics distinct id, never for authorization.
  * Usage: `VisitorId.parse(request.headers.get(VISITOR_ID_HEADER) ?? undefined)`
  */
-export const VisitorId = z.uuid().optional().catch(undefined);
+export const VisitorId = z.catch(z.optional(z.uuid()), undefined);
 
 /* ---------- Resource ---------- */
 
 export const User = z.object({
   id: z.uuid(),
   email: Email,
-  name: Name.nullable(),
+  name: z.nullable(Name),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });
@@ -63,12 +64,12 @@ export const IDEMPOTENCY_REPLAYED_HEADER = 'Idempotent-Replayed';
 export const CreateUserHeaders = z.object({
   'idempotency-key': z
     .string({ error: `${IDEMPOTENCY_HEADER} header is required` })
-    .regex(/^[A-Za-z0-9_-]{16,128}$/, { error: '16–128 chars: letters, digits, "_" or "-"' }),
+    .check(z.regex(/^[A-Za-z0-9_-]{16,128}$/, { error: '16–128 chars: letters, digits, "_" or "-"' })),
 });
 
 export const CreateUserBody = z.strictObject({
   email: Email,
-  name: Name.optional(),
+  name: z.optional(Name),
 });
 export type CreateUserInput = z.input<typeof CreateUserBody>;
 export type CreateUserBody = z.output<typeof CreateUserBody>;
@@ -86,12 +87,14 @@ export const UserIdParam = z.object({ id: z.uuid({ error: 'Invalid user id' }) }
  */
 export const UpdateUserBody = z
   .strictObject({
-    email: Email.optional(),
-    name: Name.nullable().optional(),
+    email: z.optional(Email),
+    name: z.optional(z.nullable(Name)),
   })
-  .refine((b) => b.email !== undefined || b.name !== undefined, {
-    error: 'Provide at least one field to update',
-  });
+  .check(
+    z.refine((b) => b.email !== undefined || b.name !== undefined, {
+      error: 'Provide at least one field to update',
+    }),
+  );
 export type UpdateUserInput = z.input<typeof UpdateUserBody>;
 export type UpdateUserBody = z.output<typeof UpdateUserBody>;
 
@@ -105,15 +108,18 @@ export const LIST_MAX_LIMIT = 100;
 
 /** Query-string input: values arrive as strings, hence coerce. Order is fixed: newest first, id as tiebreak. */
 export const ListUsersQuery = z.object({
-  limit: z.coerce.number().int().min(1).max(LIST_MAX_LIMIT).default(LIST_DEFAULT_LIMIT),
+  limit: z._default(
+    z.pipe(z.coerce.number(), z.int().check(z.gte(1), z.lte(LIST_MAX_LIMIT))),
+    LIST_DEFAULT_LIMIT,
+  ),
   /** Opaque to clients. Produced by the repository; a bad/foreign cursor → 422 on `cursor`. */
-  cursor: z.string().min(1).max(256).optional(),
+  cursor: z.optional(z.string().check(z.minLength(1), z.maxLength(256))),
 });
 export type ListUsersQuery = z.output<typeof ListUsersQuery>;
 
 export const ListUsersResponse = z.object({
   data: z.array(User),
-  nextCursor: z.string().nullable(),
+  nextCursor: z.nullable(z.string()),
 });
 export type ListUsersResponse = z.infer<typeof ListUsersResponse>;
 
@@ -152,7 +158,7 @@ export const ErrorEnvelope = z.object({
   error: z.object({
     code: ErrorCode,
     message: z.string(),
-    fields: z.record(z.string(), z.array(z.string())).optional(),
+    fields: z.optional(z.record(z.string(), z.array(z.string()))),
   }),
 });
 export type ErrorEnvelope = z.infer<typeof ErrorEnvelope>;
@@ -162,7 +168,7 @@ export type ErrorEnvelope = z.infer<typeof ErrorEnvelope>;
  * itself ("id is not allowed"), which is what makes the PATCH-immutable-field case legible to the client.
  * Issues with no field (e.g. the "at least one field" refinement) go under `_form`.
  */
-export function fieldErrorsFrom(error: z.ZodError): Record<string, string[]> {
+export function fieldErrorsFrom(error: z.core.$ZodError): Record<string, string[]> {
   const fields: Record<string, string[]> = {};
   const add = (key: string, message: string) => (fields[key] ??= []).push(message);
   for (const issue of error.issues) {

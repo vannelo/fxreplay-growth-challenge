@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* Only brand colours and fonts exist as utilities; spacing/breakpoints keep Tailwind defaults. Names mirror semantic tokens. */
+@theme inline {
+  --color-*: initial;
+  --font-*: initial;
+
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-bg-error: var(--bg-error);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-link: var(--text-link);
+  --color-text-error: var(--text-error);
+  --color-text-success: var(--text-success);
+  --color-border-primary: var(--border-primary);
+  --color-border-secondary: var(--border-secondary);
+  --color-border-brand: var(--border-brand);
+  --color-border-error: var(--border-error);
+  --color-border-success: var(--border-success);
+  --color-field-border: var(--field-border);
+  --color-field-border-error: var(--field-border-error);
+  --color-hero-glow: var(--hero-glow);
+  --color-btn-primary: var(--btn-bg-primary-active);
+  --color-btn-primary-hover: var(--btn-bg-primary-hover);
+  --color-btn-primary-pressed: var(--btn-bg-primary-pressed);
+  --color-btn-text: var(--btn-text);
+  --color-card: var(--card-bg-secondary);
+
+  --font-display: var(--font-lato);
+  --font-body: var(--font-nunito-sans);
+}
+
+@layer base {
+  html {
+    background: var(--bg-primary);
+    color-scheme: dark;
+  }
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-weight: 400;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  :focus-visible {
+    outline: 2px solid var(--border-brand);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--btn-bg-primary-active);
+    color: var(--btn-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

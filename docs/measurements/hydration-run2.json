@@ -1,0 +1,337 @@
+{
+  "profile": "Pixel 7, 4x CPU, 1.6Mbps/750Kbps/150ms RTT (Lighthouse mobile)",
+  "runs": 15,
+  "when": "2026-11-12T18:17:52.347Z",
+  "modes": {
+    "idle": {
+      "hydratedAtMs": {
+        "median": 1316.7,
+        "p75": 1323.6,
+        "max": 1336.8,
+        "min": 1303.6
+      },
+      "lcpMs": {
+        "median": 652,
+        "p75": 652,
+        "max": 656,
+        "min": 644
+      },
+      "tbt5sMs": {
+        "median": 0,
+        "p75": 0,
+        "max": 0,
+        "min": 0
+      },
+      "worstInteractionMs": {
+        "median": 32,
+        "p75": 32,
+        "max": 32,
+        "min": 32
+      },
+      "runsWithDeadPress": 0,
+      "runsTypedTextLost": 0,
+      "raw": [
+        {
+          "hydratedAt": 1336.8,
+          "lcp": 656,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1384.199999988079,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1315.7,
+          "lcp": 644,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1366.699999988079,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1317.2,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1350.800000011921,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1315.2,
+          "lcp": 652,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1365.699999988079,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1334.7,
+          "lcp": 644,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1348.800000011921,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1316.7,
+          "lcp": 652,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1359.800000011921,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1317.6,
+          "lcp": 652,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1368.8999999761581,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1316,
+          "lcp": 652,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1366.5999999642372,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1328,
+          "lcp": 652,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1375.1000000238419,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1315.5,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1338.9000000357628,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1323.6,
+          "lcp": 652,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1373.7000000476837,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1315.3,
+          "lcp": 644,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1358.199999988079,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1315.7,
+          "lcp": 652,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1367,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1303.6,
+          "lcp": 644,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1368.800000011921,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1321.6,
+          "lcp": 656,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1374,
+          "typedTextKept": true
+        }
+      ]
+    },
+    "load": {
+      "hydratedAtMs": {
+        "median": 1313.6,
+        "p75": 1324.2,
+        "max": 1329.9,
+        "min": 1299.6
+      },
+      "lcpMs": {
+        "median": 648,
+        "p75": 652,
+        "max": 660,
+        "min": 648
+      },
+      "tbt5sMs": {
+        "median": 0,
+        "p75": 0,
+        "max": 0,
+        "min": 0
+      },
+      "worstInteractionMs": {
+        "median": 32,
+        "p75": 32,
+        "max": 32,
+        "min": 32
+      },
+      "runsWithDeadPress": 0,
+      "runsTypedTextLost": 0,
+      "raw": [
+        {
+          "hydratedAt": 1313.6,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1367.800000011921,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1299.6,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1369,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1300.6,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1343,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1301.7,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1344.5,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1324.2,
+          "lcp": 660,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1348.6000000238419,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1314.3,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1367.4000000357628,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1308.3,
+          "lcp": 656,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1358.800000011921,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1313.5,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1366.800000011921,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1313.4,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1366.5,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1328.7,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1364.4000000357628,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1321.3,
+          "lcp": 652,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1374.800000011921,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1329,
+          "lcp": 652,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1366.8999999761581,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1329.9,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1366,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1302,
+          "lcp": 648,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1344.199999988079,
+          "typedTextKept": true
+        },
+        {
+          "hydratedAt": 1316,
+          "lcp": 656,
+          "tbt5s": 0,
+          "worstInteraction": 32,
+          "deadPresses": 0,
+          "pressAt": 1339.699999988079,
+          "typedTextKept": true
+        }
+      ]
+    }
+  }
+}

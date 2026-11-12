@@ -43,7 +43,7 @@ Plan mode → contract/ADR → implement (main thread) → tests → specialist 
 - ADR-002 Persistence: **`UserRepository` interface; in-memory adapter for local/tests, Postgres (Neon) adapter for the live deploy**
   (accepted, see decisions/ADR-002). In-memory resets on serverless, so it is never used in production.
 - ADR-003 Analytics: **PostHog behind a typed wrapper** (funnels + flags + experiments in one tool, fewer third-party scripts than GA4+GTM+Optimizely)
-- ADR-004 Experiment assignment: **middleware bucketing to avoid flicker**. Because the landing page is prerendered, either
+- ADR-004 Experiment assignment (**accepted, see decisions/ADR-004**: challenge = on-demand landing + Astro middleware; production = edge rewrite to two prerendered variants). Original note: **middleware bucketing to avoid flicker**. Because the landing page is prerendered, either
   render each variant as a prerendered route and rewrite to it in middleware (CDN-cacheable, my recommendation), or render on demand. Decide with the caching trade-off written down.
 - ADR-005 Conversion source of truth: **server-confirmed event after 201**, not the button click
 

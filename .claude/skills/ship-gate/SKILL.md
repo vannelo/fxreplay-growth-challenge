@@ -7,12 +7,13 @@ description: Pre-merge quality gate for the FX Replay growth experience. Runs ty
 
 Run in this order and stop on the first hard failure in steps 1-2.
 
-1. **Static**: `pnpm astro check && pnpm lint`
-2. **Tests**: `pnpm test` (Vitest) then `pnpm build && pnpm test:e2e` (Playwright against `astro preview`, includes analytics assertions)
+0. **Owner placeholders**: `grep -rn "TODO(owner)" src` must return nothing. Any hit is a hard NO-GO (copy or a URL the owner still has to supply).
+1. **Static**: `npm run check` (`astro check`). Lint is not configured in this repo: report "lint: not configured", do not claim it passed.
+2. **Tests**: `npm test` (Vitest: API, unit, design tokens), then `npm run test:e2e` (Playwright against the production build served by the Node adapter, see ADR-008; `astro preview` does not support the Vercel adapter). Run under Node >= 22.23.4.
 3. **Agents (run in parallel, independent contexts)**:
    - `api-reviewer` on changed files under `src/pages/api` and `src/server`
    - `a11y-auditor` on all signup states
-   - `perf-auditor` on the production build (`pnpm build && pnpm preview`), mobile profile
+   - `perf-auditor` on the production build (`npm run build:e2e && PORT=<p> node dist/server/entry.mjs`), mobile profile; also report TTFB, since the page is rendered on demand (ADR-004)
    - `analytics-architect` via `/tracking-audit`
 4. **Report** in this exact format:
 

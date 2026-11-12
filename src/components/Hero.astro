@@ -1,0 +1,33 @@
+---
+import { PUBLIC_SIGNIN_URL } from 'astro:env/client';
+import SignupForm from './signup/SignupForm';
+import type { Variant } from '../lib/experiment';
+
+interface Props {
+  variant: Variant;
+}
+const { variant } = Astro.props;
+// TEMP(G2): build-time switch so client:load and client:idle can be measured; removed once chosen.
+const hydrate = process.env.HYDRATE_MODE === 'load' ? 'load' : 'idle';
+---
+
+<section class="relative isolate overflow-hidden" aria-labelledby="hero-title">
+  <div class="absolute inset-x-0 top-0 -z-10 h-[32rem] bg-[radial-gradient(60%_80%_at_20%_0%,var(--color-hero-glow),transparent)]" aria-hidden="true"></div>
+  <div class="mx-auto grid max-w-6xl items-center gap-10 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-2 lg:gap-16 lg:pb-24 lg:pt-16">
+    <div>
+      <h1 id="hero-title" class="font-display text-5xl font-black text-text-primary sm:text-6xl">
+        FX Replay is free to try.
+      </h1>
+      <p class="mt-5 max-w-prose text-lg text-text-secondary">
+        Replay historical forex price action and practise your trading strategy at your own pace.
+      </p>
+    </div>
+    {
+      hydrate === 'load' ? (
+        <SignupForm client:load variant={variant} signinUrl={PUBLIC_SIGNIN_URL} />
+      ) : (
+        <SignupForm client:idle variant={variant} signinUrl={PUBLIC_SIGNIN_URL} />
+      )
+    }
+  </div>
+</section>
