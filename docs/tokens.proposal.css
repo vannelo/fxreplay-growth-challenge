@@ -1,0 +1,94 @@
+/*
+ * PROPOSAL — not yet wired into the app. Source: brand-kit.html (PRIM + SEM maps).
+ * Rule: components use ONLY the semantic layer (--bg-primary, ...). Primitives live here and nowhere else.
+ * Every value below exists in the Brand Kit. Items marked  /* GAP */  are NOT in the kit — see docs/brand-questions.md.
+ */
+:root {
+  /* ---- Primitives (the only place literal hex lives) ---- */
+  --blue-900: #012054; --blue-800: #01307f; --blue-700: #0250d3; --blue-600: #0260fd;
+  --blue-500: #2c7bfd; --blue-400: #5695fe; --blue-300: #80affe; --blue-200: #abcafe;
+  --blue-100: #ccdfff; --blue-50: #eaf2ff;
+  --dark-950: #000000; --dark-900: #030303; --dark-800: #0a0a0a; --dark-700: #1a1a1a;
+  --dark-600: #2a2a2a; --dark-500: #3a3a3a; --dark-400: #4a4a4a; --dark-300: #5a5a5a;
+  --dark-200: #6a6a6a; --dark-100: #7a7a7a; --dark-50: #8a8a8a;
+  --neutral-400: #888888; --neutral-200: #d1d1d1; --neutral-50: #f6f6f6;
+  --success: #53b483; --success-light: #d9f9e6; --success-dark: #2f7a5c;
+  --error: #cd3636;   --error-light: #f8d7da;   --error-dark: #912626;
+  --warning: #cd8a36; --warning-light: #fff3cd; --warning-dark: #8a5a1f;
+  --blue-950: #000000; /* GAP: referenced by btn-bg-primary-disabled, undefined in kit; kit JS resolves it to #000 */
+
+  /* ---- Semantic: background ---- */
+  --bg-primary: var(--dark-900);   /* page ground */
+  --bg-secondary: var(--dark-800);
+  --bg-tertiary: var(--dark-700);
+  --bg-alternate: var(--neutral-50); /* kit name: "alternate" (light surface) */
+  --bg-card: var(--dark-900);
+  --bg-success: var(--success);
+  --bg-error: var(--error);
+  --bg-warning: var(--warning);
+
+  /* ---- Semantic: border ---- */
+  --border-primary: var(--dark-700);
+  --border-secondary: var(--dark-600);
+  --border-tertiary: var(--dark-500);
+  --border-brand: var(--blue-600);
+  --border-success: var(--success-dark);
+  --border-error: var(--error-dark);
+  --border-warning: var(--warning-dark);
+
+  /* ---- Semantic: text ---- */
+  --text-primary: var(--neutral-50);
+  --text-secondary: var(--neutral-200);
+  --text-disabled: var(--neutral-400);
+  --text-brand: var(--blue-600);   /* 4.02:1 on bg-primary — FAILS 4.5:1 for body text; see questions */
+  --text-error: var(--error-light);
+  --text-warning: var(--warning-light);
+  --text-success: var(--success-light);
+
+  /* ---- Semantic: button ---- */
+  --btn-bg-primary-active: var(--blue-600);
+  --btn-bg-primary-hover: var(--blue-800);
+  --btn-bg-primary-pressed: var(--blue-900);
+  --btn-bg-primary-disabled: var(--blue-950);
+  --btn-bg-secondary-active: var(--dark-700);
+  --btn-bg-secondary-hover: var(--dark-600);
+  --btn-bg-secondary-pressed: var(--dark-800);
+  --btn-bg-secondary-disabled: var(--dark-500);
+  --btn-bg-outline-active: var(--dark-900);
+  --btn-bg-outline-hover: var(--dark-600);
+  --btn-bg-outline-pressed: var(--dark-700);
+  --btn-bg-outline-disabled: var(--dark-800);
+  --btn-border-outline: var(--dark-200);
+  --btn-bg-minimal: var(--dark-900);
+  --btn-text-minimal-hover: var(--blue-500);
+  --btn-text-minimal-pressed: var(--blue-500);
+  --btn-text: var(--neutral-50);
+  --btn-text-disabled: var(--dark-100);
+
+  /* ---- Semantic: icon / banner / card ---- */
+  --icon-primary: var(--neutral-50);
+  --icon-secondary: var(--neutral-200);
+  --icon-error: var(--error-light);
+  --icon-warning: var(--warning-light);
+  --icon-success: var(--success-light);
+  --banner-bg-error: var(--error);
+  --banner-bg-warning: var(--warning);
+  --banner-bg-success: var(--success);
+  --banner-bg-info: var(--dark-800);
+  --banner-bg-secondary: var(--dark-700);
+  --banner-color-icon: var(--neutral-50);
+  --banner-color-headline: var(--neutral-50);
+  --banner-color-paragraph: var(--neutral-50);
+  --card-bg-primary: var(--dark-900);
+  --card-bg-secondary: var(--dark-700);
+  --card-bg-translucent: rgb(3 3 3 / 0.6);  /* kit: dark-900 @ 60% */
+  --card-text-primary: var(--neutral-50);
+  --card-text-secondary: var(--neutral-200);
+  --card-bg-primary-hover: var(--dark-700);
+  --card-bg-secondary-hover: var(--dark-600);
+
+  /* ---- Type (families only; weights per CLAUDE.md) ---- */
+  --font-display: 'Lato', 'Helvetica Neue', Arial, sans-serif;            /* 400 / 700 / 900 */
+  --font-body: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; /* 400 / 600 / 700 */
+  /* GAP: kit page also loads JetBrains Mono for its own labels; not part of the brand type system. Do not use. */
+}

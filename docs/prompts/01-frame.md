@@ -4,7 +4,7 @@
 **Intent:** make sure I've understood the brief and found the ambiguities *before* investing time. I answer the questions myself.
 
 ```
-You are a skeptical staff engineer reviewing a take-home brief. Read @"Growth Engineer Challenge.pdf" and @CLAUDE.md.
+You are a skeptical staff engineer reviewing a take-home brief. Read @docs/brief.md and @CLAUDE.md.
 
 Task: do NOT propose a solution. Produce:
 1. The 8 evaluation criteria the reviewers are most likely to weight, ranked, with the evidence in the brief for each.

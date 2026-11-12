@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>FX Replay Brand Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --d-900:#030303; --d-700:#1A1A1A;
+    --n-50:#F6F6F6; --n-200:#D1D1D1; --n-400:#888888;
+    --brand:#0260FD; --brand-500:#2C7BFD;
+
+    --bg:var(--d-900);
+    --card:#0b0b0b;
+    --line:#1c1c1c;
+    --line-2:#141414;
+    --ink:var(--n-50);
+    --ink-2:var(--n-200);
+    --ink-3:#9a9a9a;
+    --ink-4:var(--n-400);
+
+    --sans:'Nunito Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --display:'Lato','Helvetica Neue',Arial,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+
+    --wrap:940px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto} *{transition:none!important}}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3{font-family:var(--display); text-wrap:balance; margin:0; line-height:1.1; letter-spacing:-.02em}
+  ::selection{background:var(--brand); color:#fff}
+
+  .wrap{max-width:var(--wrap); margin:0 auto; padding:0 clamp(20px,5vw,40px)}
+
+  /* header */
+  header{border-bottom:1px solid var(--line-2)}
+  header .wrap{display:flex; align-items:center; gap:14px; padding-top:22px; padding-bottom:22px}
+  header svg{width:30px; height:30px; flex:none}
+  header b{font-family:var(--display); font-weight:900; font-size:14px; letter-spacing:.14em}
+  header .tag{margin-left:auto; font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-4)}
+
+  section{padding:64px 0; border-bottom:1px solid var(--line-2)}
+  section:last-of-type{border-bottom:0}
+  .kicker{font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--brand-500); margin-bottom:12px}
+  h2.sec{font-size:1.7rem; font-weight:900}
+  .sub{color:var(--ink-3); max-width:60ch; margin-top:10px; font-size:15px}
+
+  /* logo */
+  .logo-stage{
+    border:1px solid var(--line); border-radius:12px; margin-top:28px;
+    background:radial-gradient(120% 140% at 15% 0%, rgba(2,96,253,.14), transparent 55%), #060606;
+    padding:clamp(30px,6vw,54px); display:grid; place-items:center;
+  }
+  .logo-stage svg{width:min(400px,80%); height:auto}
+  .logo-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-top:14px}
+  .logo-cell{border:1px solid var(--line); border-radius:11px; overflow:hidden}
+  .logo-cell .stage{display:grid; place-items:center; padding:30px 20px; min-height:120px}
+  .logo-cell .stage svg{max-width:74%; max-height:64px; height:auto}
+  .logo-cell .cap{border-top:1px solid var(--line); padding:10px 14px; display:flex; justify-content:space-between; gap:8px; background:#070707}
+  .logo-cell .cap span{font-size:12px; color:var(--ink-3)}
+  .logo-cell .cap code{font-family:var(--mono); font-size:10.5px; color:var(--ink-4)}
+  .st-dark{background:var(--d-900)} .st-blue{background:var(--brand)} .st-light{background:var(--n-50)}
+
+  /* swatches */
+  .scale-name{display:flex; align-items:baseline; gap:10px; margin:30px 0 12px}
+  .scale-name h3{font-size:1rem; font-weight:700; letter-spacing:0; font-family:var(--display)}
+  .scale-name .t{font-family:var(--mono); font-size:11px; color:var(--ink-4)}
+  .swatches{display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px}
+  .sw{border:1px solid var(--line); border-radius:9px; overflow:hidden; cursor:pointer; background:var(--card); transition:.16s; text-align:left; padding:0; font:inherit; color:inherit; display:block}
+  .sw:hover{transform:translateY(-2px); border-color:#2f2f2f}
+  .sw:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  .sw .c{height:62px; display:block; position:relative}
+  .sw .c .star{position:absolute; top:6px; right:7px; font-size:11px; color:#fff; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+  .sw .i{padding:8px 10px 10px}
+  .sw .i .nm{font-size:12px; font-weight:700; color:var(--ink)}
+  .sw .i .hx{font-family:var(--mono); font-size:11px; color:var(--ink-3); margin-top:2px; text-transform:uppercase}
+
+  .sem-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:9px}
+  .sem{display:flex; align-items:center; gap:11px; border:1px solid var(--line); border-radius:9px; padding:9px 11px; background:var(--card); cursor:pointer; transition:.16s; text-align:left; font:inherit; color:inherit; width:100%}
+  .sem:hover{border-color:#2f2f2f; background:#0e0e0e}
+  .sem:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  .sem .dot{width:30px; height:30px; border-radius:7px; flex:none; border:1px solid rgba(255,255,255,.09)}
+  .sem .tk{font-family:var(--mono); font-size:12px; color:var(--ink); font-weight:500; word-break:break-word}
+  .sem .mp{font-family:var(--mono); font-size:10.5px; color:var(--ink-4); margin-top:2px}
+  .sem .mp b{color:var(--brand-500); font-weight:500}
+  .semantic-block{margin-top:26px}
+  .semantic-block h3{font-size:.95rem; font-weight:700; margin-bottom:2px; font-family:var(--display); letter-spacing:0}
+  .semantic-block .n{color:var(--ink-4); font-size:12px; margin-bottom:12px; font-family:var(--mono)}
+
+  /* fonts */
+  .fonts{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:28px}
+  @media(max-width:640px){.fonts{grid-template-columns:1fr}}
+  .fam{border:1px solid var(--line); border-radius:12px; padding:26px; background:#060606}
+  .fam .role{font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--brand-500)}
+  .fam .name{font-size:2.6rem; font-weight:900; margin:8px 0 4px; font-family:var(--display)}
+  .fam.body .name{font-family:var(--sans)}
+  .fam .meta{color:var(--ink-4); font-size:12.5px; font-family:var(--mono)}
+  .fam .aa{font-size:1.9rem; margin-top:18px; color:var(--ink-2); line-height:1.25}
+  .fam.disp .aa{font-family:var(--display)} .fam.body .aa{font-family:var(--sans)}
+  .fam .wts{display:flex; gap:16px; margin-top:12px; flex-wrap:wrap; color:var(--ink-3); font-size:13.5px}
+  .fam.disp .wts span{font-family:var(--display)} .fam.body .wts span{font-family:var(--sans)}
+  .fam .wts span:nth-child(1){font-weight:400}.fam .wts span:nth-child(2){font-weight:600}.fam .wts span:nth-child(3){font-weight:700}.fam .wts span:nth-child(4){font-weight:900}
+  .fam .stack{margin-top:16px; font-family:var(--mono); font-size:11px; color:var(--ink-4); border-top:1px solid var(--line-2); padding-top:12px; word-break:break-word}
+
+  footer{max-width:var(--wrap); margin:0 auto; padding:26px clamp(20px,5vw,40px) 50px; color:var(--ink-4); font-size:12.5px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px}
+  footer .m{font-family:var(--mono)}
+
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--brand); color:#fff; font-family:var(--mono); font-size:13px; padding:10px 18px; border-radius:100px; opacity:0; pointer-events:none; transition:.2s; z-index:50}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+
+<header>
+  <div class="wrap">
+    <svg viewBox="0 0 719 719" aria-hidden="true"><path d="M704.74 328.15 330.63 8.53C306.72-11.89 271.71 6.65 271.71 39.73V679c0 33.08 35 51.62 58.92 31.2L704.74 390.53c18.59-15.87 18.59-46.53 0-62.38ZM594.56 377.33 379.88 567.66c-13.93 12.35-34.78 1.56-34.78-18V169c0-19.55 20.85-30.34 34.78-18l214.68 190.35c10.44 9.28 10.44 26.7 0 35.98Z" fill="#0260FD"/><path d="M435.72 330.44 62.69 11.76C38-9.31 0 8.21 0 40.66V678c0 32.44 38 50 62.69 28.89l373-318.68c4.175-3.565 7.528-7.993 9.828-12.978 2.3-4.985 3.493-10.41 3.496-15.9.003-5.49-1.184-10.916-3.479-15.904-2.295-4.987-5.644-9.418-9.815-12.988Z" fill="#F6F6F6"/></svg>
+    <b>FX&nbsp;REPLAY</b>
+    <span class="tag">Brand Kit</span>
+  </div>
+</header>
+
+<!-- LOGO -->
+<section>
+  <div class="wrap">
+    <div class="kicker">Identity</div>
+    <h2 class="sec">Logo</h2>
+    <p class="sub">The wordmark is the primary lockup; the isotype is for square contexts — favicons, app icons, avatars. Never recolor, stretch, or add effects.</p>
+    <div class="logo-stage">
+      <svg viewBox="0 0 1609 209" fill="#F6F6F6" aria-label="FX Replay logo"><use href="#wm"/></svg>
+    </div>
+    <div class="logo-grid">
+      <div class="logo-cell"><div class="stage st-dark"><svg viewBox="0 0 1609 209" fill="#F6F6F6" aria-label="Wordmark on dark"><use href="#wm"/></svg></div><div class="cap"><span>Wordmark · light</span><code>on dark</code></div></div>
+      <div class="logo-cell"><div class="stage st-blue"><svg viewBox="0 0 1609 209" fill="#FFFFFF" aria-label="Wordmark on blue"><use href="#wm"/></svg></div><div class="cap"><span>Wordmark · reversed</span><code>on brand</code></div></div>
+      <div class="logo-cell"><div class="stage st-light"><svg viewBox="0 0 719 719" style="max-height:72px" fill="#000000" aria-label="Isotype black"><use href="#iso"/></svg></div><div class="cap"><span>Isotype · black</span><code>isotypeBlack</code></div></div>
+      <div class="logo-cell"><div class="stage st-dark"><svg viewBox="0 0 719 719" style="max-height:72px" fill="#F6F6F6" aria-label="Isotype white"><use href="#iso"/></svg></div><div class="cap"><span>Isotype · white</span><code>isotypeWhite</code></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRIMITIVES -->
+<section>
+  <div class="wrap">
+    <div class="kicker">Color</div>
+    <h2 class="sec">Primitive palette</h2>
+    <p class="sub">The raw values — the only place literal hex lives. Click any swatch to copy.</p>
+    <div id="primitive-root"></div>
+  </div>
+</section>
+
+<!-- SEMANTIC -->
+<section>
+  <div class="wrap">
+    <div class="kicker">Color</div>
+    <h2 class="sec">Semantic tokens</h2>
+    <p class="sub">Purpose-named aliases pointing at primitives. Build with these — reading the name tells you the intent. Click a row to copy the token name.</p>
+    <div id="semantic-root"></div>
+  </div>
+</section>
+
+<!-- FONTS -->
+<section>
+  <div class="wrap">
+    <div class="kicker">Type</div>
+    <h2 class="sec">Font families</h2>
+    <p class="sub">Two families — Lato for headings, Nunito Sans for body and UI.</p>
+    <div class="fonts">
+      <div class="fam disp">
+        <div class="role">Display / Headings</div>
+        <div class="name">Lato</div>
+        <div class="meta">400 · 700 · 900</div>
+        <div class="aa">Ag Bb Cc 123</div>
+        <div class="wts"><span>Regular</span><span>Bold</span><span>Black</span></div>
+        <div class="stack">'Lato', 'Helvetica Neue', Arial, sans-serif</div>
+      </div>
+      <div class="fam body">
+        <div class="role">Body / UI</div>
+        <div class="name">Nunito Sans</div>
+        <div class="meta">400 · 600 · 700</div>
+        <div class="aa">Ag Bb Cc 123</div>
+        <div class="wts"><span>Regular</span><span>SemiBold</span><span>Bold</span></div>
+        <div class="stack">'Nunito Sans', -apple-system, 'Segoe UI', sans-serif</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="m">FX REPLAY · Brand Kit</span>
+  <span>Click any color or token to copy</span>
+</footer>
+
+<div class="toast" id="toast">Copied</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="wm" viewBox="0 0 1609 209"><path d="M0 97.31c0-2.387.948-4.676 2.636-6.364S6.613 88.31 9 88.31h109c2.387 0 4.676.948 6.364 2.636S127 94.923 127 97.31v16.87c0 2.387-.948 4.676-2.636 6.364s-3.977 2.636-6.364 2.636H43.65c-2.387 0-4.676.948-6.364 2.636S34.65 129.793 34.65 132.18v66.42c0 2.387-.948 4.676-2.636 6.364s-3.977 2.636-6.364 2.636H9c-2.387 0-4.676-.948-6.364-2.636S0 200.987 0 198.6ZM0 9c0-2.387.948-4.676 2.636-6.364S6.613 0 9 0h120.4c2.387 0 4.676.948 6.364 2.636S138.4 6.613 138.4 9v16.57c0 2.387-.948 4.676-2.636 6.364s-3.977 2.636-6.364 2.636H9c-2.387 0-4.676-.948-6.364-2.636S0 27.957 0 25.57Z"/><path d="M199.61 207.93c-1.692.008-3.352-.461-4.79-1.354s-2.595-2.173-3.338-3.692-1.043-3.218-.865-4.901 .828-3.281 1.873-4.612l65-83.46c1.216-1.575 1.876-3.51 1.876-5.5s-.66-3.925-1.876-5.5l-65.1-84.33c-1.052-1.331-1.706-2.933-1.887-4.62s.119-3.39.864-4.914 1.906-2.807 3.349-3.7S197.823-.013 199.52 0h23.12c1.402-.001 2.785.326 4.039.955s2.344 1.542 3.181 2.666l47.69 63.74c.838 1.124 1.926 2.036 3.179 2.664s2.635.956 4.036.956 2.783-.328 4.036-.956 2.341-1.54 3.179-2.664l48.14-63.8c.842-1.11 1.931-2.01 3.181-2.628S345.926-.005 347.32 0h23.87c1.671-.007 3.312.452 4.737 1.324s2.579 2.125 3.333 3.617.078 3.399-.065 5.064-.747 3.259-1.744 4.6L316 99c-1.152 1.552-1.774 3.433-1.774 5.365s.622 3.813 1.774 5.365l62.28 83.78c1.005 1.34 1.616 2.934 1.765 4.602s-.171 3.345-.923 4.841-1.907 2.753-3.335 3.629-3.071 1.336-4.746 1.329h-23.78c-1.393.002-2.767-.319-4.015-.939s-2.335-1.521-3.175-2.632l-48.2-63.61c-.838-1.118-1.925-2.025-3.175-2.65s-2.628-.95-4.025-.95-2.775.325-4.025.95-2.337 1.532-3.175 2.65l-47.74 63.55c-.839 1.119-1.928 2.027-3.18 2.652s-2.632.95-4.031.948Z"/><path d="M641.08 194.32c.755 1.372 1.139 2.918 1.114 4.484s-.458 3.099-1.257 4.446-1.936 2.462-3.298 3.236-2.903 1.178-4.469 1.174h-17.94c-1.625.002-3.22-.435-4.616-1.266s-2.541-2.025-3.314-3.454l-40.83-75.29c-.773-1.429-1.918-2.623-3.314-3.454s-2.991-1.268-4.616-1.266H496c-2.387 0-4.676-.948-6.364-2.636S487 116.317 487 113.93V97.63c0-2.387.948-4.676 2.636-6.364S493.613 88.63 496 88.63h90.91c4.01-.123 7.922-1.273 11.36-3.34 3.268-1.989 6.011-4.733 8-8 2.39-3.7 3.6-9 3.6-15.79s-1.21-11.81-3.6-15.51c-2.001-3.258-4.742-5.999-8-8-3.441-2.06-7.352-3.206-11.36-3.33H496c-2.387 0-4.676-.948-6.364-2.636S487 28.047 487 25.66V9c0-2.387.948-4.676 2.636-6.364S493.613 0 496 0h90.91c10.061.412 19.903 3.063 28.81 7.76 3.719 2.176 7.236 4.679 10.51 7.48 3.627 3.076 6.719 6.732 9.15 10.82 2.976 4.714 5.209 9.857 6.62 15.25 1.77 6.584 2.604 13.384 2.48 20.2 0 12.533-2.03 22.867-6.09 31-4.05 7.94-8.7 14.21-13.84 18.85-5 4.42-9.79 7.49-14.39 9.11-3.54 1.34-5.8 6.54-4 9.87Z"/><path d="M691.74 198.66v-16.57c0-2.387.948-4.676 2.636-6.364S698.353 173.09 700.74 173.09h120.69c2.387 0 4.676.948 6.364 2.636S830.43 179.703 830.43 182.09v16.6c0 2.387-.948 4.676-2.636 6.364s-3.977 2.636-6.364 2.636H700.78c-1.188.005-2.365-.225-3.463-.676s-2.096-1.116-2.937-1.955-1.506-1.836-1.959-2.934-.685-2.275-.681-3.463ZM806 86.4c2.387 0 4.676.948 6.364 2.636S815 92.013 815 94.4v16.6c0 2.387-.948 4.676-2.636 6.364S808.387 121 806 121H700.8c-2.387 0-4.676-.948-6.364-2.636S691.8 114.387 691.8 112V95.42c0-2.387.948-4.676 2.636-6.364S698.413 86.42 700.8 86.42ZM691.74 9c0-2.387.948-4.676 2.636-6.364S698.353 0 700.74 0h120.69c2.387 0 4.676.948 6.364 2.636S830.43 6.613 830.43 9v16.61c0 2.387-.948 4.676-2.636 6.364s-3.977 2.636-6.364 2.636H700.76c-2.387 0-4.676-.948-6.364-2.636S691.76 27.997 691.76 25.61Z"/><path d="M989 .16c-.001.021.002.041.008.06s.018.038.032.053.031.027.05.035.041.012.062.012c9.976.428 19.75 2.978 28.66 7.48 3.76 2.022 7.29 4.436 10.54 7.2 3.65 2.928 6.75 6.488 9.15 10.51 2.95 4.639 5.18 9.696 6.63 15 1.76 6.493 2.6 13.203 2.48 19.93.13 6.817-.71 13.617-2.48 20.2-1.52 5.358-3.75 10.487-6.63 15.25-2.43 4.072-5.52 7.712-9.15 10.77-3.23 2.769-6.75 5.173-10.51 7.17-8.91 4.714-18.77 7.346-28.84 7.7h-60.72c-2.387 0-4.676.948-6.364 2.636S919.28 128.143 919.28 130.53v68.09c0 2.387-.948 4.676-2.636 6.364s-3.977 2.636-6.364 2.636h-16.6c-2.387 0-4.676-.948-6.364-2.636S884.68 201.007 884.68 198.62V95.69c0-2.387.948-4.676 2.636-6.364S891.293 86.69 893.68 86.69h92.82c.18 0 1.67-.09 4.42-.27 3.034-.437 5.948-1.481 8.57-3.07 3.41-1.892 6.35-4.543 8.57-7.75 2.57-3.52 3.87-8.57 3.87-15.24 0-6.45-1.39-11.37-4.14-14.66-2.24-3.197-5.17-5.849-8.57-7.76-3.921-2.089-8.278-3.23-12.72-3.33H893.65c-2.387 0-4.676-.948-6.364-2.636S884.65 27.997 884.65 25.61V9c0-2.387.948-4.676 2.636-6.364S891.263 0 893.65 0h95.21c.038.007.073.026.098.055S988.998.121 989 .16Z"/><path d="M1233.87 199.5c0 2.387-.95 4.676-2.64 6.364s-3.97 2.636-6.36 2.636h-120.96c-2.39 0-4.68-.948-6.36-2.636s-2.64-3.977-2.64-6.364V9.33c0-2.387.95-4.676 2.64-6.364s3.97-2.636 6.36-2.636h16.55c2.39 0 4.68.948 6.36 2.636s2.64 3.977 2.64 6.364v155.58c0 2.387.95 4.676 2.64 6.364s3.97 2.636 6.36 2.636h87c2.23 0 4.36.884 5.94 2.457s2.46 3.707 2.46 5.933Z"/><path d="M1531.92 109.14c-1.28 1.589-1.99 3.567-2 5.61v83.89c0 2.387-.95 4.676-2.64 6.364s-3.97 2.636-6.36 2.636h-16.59c-2.39 0-4.68-.948-6.36-2.636s-2.64-3.977-2.64-6.364v-84c0-1.969-.65-3.884-1.84-5.45l-71.82-94.67c-1.02-1.335-1.65-2.931-1.81-4.605s.15-3.359.89-4.866 1.9-2.773 3.34-3.657 3.09-1.349 4.77-1.343h19.85c1.34.003 2.67.308 3.88.891s2.28 1.43 3.12 2.479l51.75 64.52c.86 1.076 1.95 1.94 3.2 2.526s2.62.879 3.99.856 2.73-.362 3.96-.99 2.3-1.529 3.12-2.633l47.91-64c.84-1.124 1.93-2.035 3.19-2.662s2.65-.951 4.05-.948h23c1.7-.019 3.37.444 4.82 1.335s2.62 2.173 3.37 3.698.55 3.232.37 4.921-.66 3.293-1.71 4.626Z"/><path d="M1421.13 94.89 1303.48 2.54c-1.69-1.325-3.72-2.148-5.85-2.376s-4.29.149-6.22 1.087-3.56 2.4-4.7 4.219-1.75 3.922-1.75 6.07v184.7c0 2.149.6 4.255 1.74 6.076s2.77 3.285 4.71 4.224 4.1 1.315 6.24 1.085 4.17-1.057 5.86-2.386l117.65-92.34c1.36-1.071 2.47-2.439 3.23-3.999s1.15-3.271 1.15-5.006-.4-3.446-1.15-5.006-1.87-2.928-3.23-3.999Z"/></symbol>
+  <symbol id="iso" viewBox="0 0 719 719"><path d="M704.74 328.15 330.63 8.53C306.72-11.89 271.71 6.65 271.71 39.73V679c0 33.08 35 51.62 58.92 31.2L704.74 390.53c18.59-15.87 18.59-46.53 0-62.38ZM594.56 377.33 379.88 567.66c-13.93 12.35-34.78 1.56-34.78-18V169c0-19.55 20.85-30.34 34.78-18l214.68 190.35c10.44 9.28 10.44 26.7 0 35.98Z"/><path d="M435.72 330.44 62.69 11.76C38-9.31 0 8.21 0 40.66V678c0 32.44 38 50 62.69 28.89l373-318.68c4.175-3.565 7.528-7.993 9.828-12.978 2.3-4.985 3.493-10.41 3.496-15.9.003-5.49-1.184-10.916-3.479-15.904-2.295-4.987-5.644-9.418-9.815-12.988Z"/></symbol>
+</svg>
+
+<script>
+const PRIM = {
+  "Brand":[["Electric Blue","#0260FD"],["Black","#000000"],["Accent","#2A2A2A"]],
+  "Neutral":[["neutral-950","#000000"],["neutral-900","#3D3D3D"],["neutral-800","#454545"],["neutral-700","#4F4F4F"],["neutral-600","#5D5D5D"],["neutral-500","#6D6D6D"],["neutral-400","#888888"],["neutral-300","#B0B0B0"],["neutral-200","#D1D1D1"],["neutral-100","#E7E7E7"],["neutral-50","#F6F6F6"]],
+  "Blue":[["blue-900","#012054"],["blue-800","#01307F"],["blue-700","#0250D3"],["blue-600","#0260FD",1],["blue-500","#2C7BFD"],["blue-400","#5695FE"],["blue-300","#80AFFE"],["blue-200","#ABCAFE"],["blue-100","#CCDFFF"],["blue-50","#EAF2FF"]],
+  "Dark":[["dark-950","#000000"],["dark-900","#030303"],["dark-800","#0A0A0A"],["dark-700","#1A1A1A"],["dark-600","#2A2A2A"],["dark-500","#3A3A3A"],["dark-400","#4A4A4A"],["dark-300","#5A5A5A"],["dark-200","#6A6A6A"],["dark-100","#7A7A7A"],["dark-50","#8A8A8A"]],
+  "System":[["success","#53B483"],["success-light","#D9F9E6"],["success-dark","#2F7A5C"],["error","#CD3636"],["error-light","#F8D7DA"],["error-dark","#912626"],["warning","#CD8A36"],["warning-light","#FFF3CD"],["warning-dark","#8A5A1F"]]
+};
+const RESOLVE = {};
+Object.values(PRIM).forEach(a=>a.forEach(([n,h])=>RESOLVE[n]=h));
+RESOLVE["blue-950"]="#000000";
+RESOLVE["dark-900-60"]="rgba(3,3,3,0.6)";
+
+const SEM = {
+  "Background":[["bg-primary","dark-900"],["bg-secondary","dark-800"],["bg-tertiary","dark-700"],["alternate","neutral-50"],["bg-card","dark-900"],["bg-success","success"],["bg-error","error"],["bg-warning","warning"]],
+  "Border":[["border-primary","dark-700"],["border-secondary","dark-600"],["border-tertiary","dark-500"],["border-success","success-dark"],["border-error","error-dark"],["border-warning","warning-dark"],["border-brand","blue-600"]],
+  "Text":[["text-primary","neutral-50"],["text-secondary","neutral-200"],["text-disabled","neutral-400"],["text-brand","blue-600"],["text-error","error-light"],["text-warning","warning-light"],["text-success","success-light"]],
+  "Button":[["btn-bg-primary-active","blue-600"],["btn-bg-primary-hover","blue-800"],["btn-bg-primary-pressed","blue-900"],["btn-bg-primary-disabled","blue-950"],["btn-bg-secondary-active","dark-700"],["btn-bg-secondary-hover","dark-600"],["btn-bg-secondary-pressed","dark-800"],["btn-bg-secondary-disabled","dark-500"],["btn-bg-outline-active","dark-900"],["btn-bg-outline-hover","dark-600"],["btn-bg-outline-disabled","dark-800"],["btn-bg-outline-pressed","dark-700"],["btn-border-outline","dark-200"],["btn-bg-minimal","dark-900"],["btn-text-minimal-hover","blue-500"],["btn-text-minimal-pressed","blue-500"],["btn-text","neutral-50"],["btn-text-disabled","dark-100"]],
+  "Icon":[["icon-primary","neutral-50"],["icon-secondary","neutral-200"],["icon-error","error-light"],["icon-warning","warning-light"],["icon-success","success-light"]],
+  "Banner":[["banner-bg-error","error"],["banner-bg-warning","warning"],["banner-bg-success","success"],["banner-bg-info","dark-800"],["banner-bg-secondary","dark-700"],["banner-color-icon","neutral-50"],["banner-color-headline","neutral-50"],["banner-color-paragraph","neutral-50"]],
+  "Card":[["card-bg-primary","dark-900"],["card-bg-secondary","dark-700"],["card-bg-translucent","dark-900-60"],["card-text-primary","neutral-50"],["card-text-secondary","neutral-200"],["card-bg-primary-hover","dark-700"],["card-bg-secondary-hover","dark-600"]]
+};
+
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent='Copied  '+msg;
+  t.classList.add('show'); clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),1400);
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta);
+}
+function copy(text){
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(()=>fallbackCopy(text));} else {fallbackCopy(text);} }
+  catch(e){ fallbackCopy(text); }
+  showToast(text);
+}
+
+const proot=document.getElementById('primitive-root');
+for(const [group,arr] of Object.entries(PRIM)){
+  const h=document.createElement('div'); h.className='scale-name';
+  h.innerHTML=`<h3>${group}</h3><span class="t">${arr.length} value${arr.length>1?'s':''}</span>`;
+  proot.appendChild(h);
+  const g=document.createElement('div'); g.className='swatches';
+  arr.forEach(([name,hex,star])=>{
+    const b=document.createElement('button'); b.className='sw'; b.type='button'; b.setAttribute('aria-label',`Copy ${hex}`);
+    b.innerHTML=`<span class="c" style="background:${hex}">${star?'<span class="star">★</span>':''}</span><span class="i"><span class="nm">${name}</span><span class="hx">${hex}</span></span>`;
+    b.onclick=()=>copy(hex); g.appendChild(b);
+  });
+  proot.appendChild(g);
+}
+
+const sroot=document.getElementById('semantic-root');
+for(const [group,arr] of Object.entries(SEM)){
+  const wrap=document.createElement('div'); wrap.className='semantic-block';
+  wrap.innerHTML=`<h3>${group}</h3><div class="n">${arr.length} tokens</div>`;
+  const g=document.createElement('div'); g.className='sem-grid';
+  arr.forEach(([tk,ref])=>{
+    const hex=RESOLVE[ref]||'#333'; const alpha = ref==='dark-900-60';
+    const b=document.createElement('button'); b.className='sem'; b.type='button'; b.setAttribute('aria-label',`Copy ${tk}`);
+    b.innerHTML=`<span class="dot" style="background:${hex}"></span><span><span class="tk">${tk}</span><span class="mp">→ <b>${alpha?'dark-900 · 60%':ref}</b> · ${hex}</span></span>`;
+    b.onclick=()=>copy(tk); g.appendChild(b);
+  });
+  wrap.appendChild(g); sroot.appendChild(wrap);
+}
+</script>
+
+</body>
+</html>
