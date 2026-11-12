@@ -40,14 +40,15 @@ Plan mode → contract/ADR → implement (main thread) → tests → specialist 
 ## Candidate ADRs to settle early (recommendation in bold)
 - ADR-001 Frontend: **Astro (required), prerendered landing + one hydrated form island** (accepted, see decisions/ADR-001)
 - ADR-006 Island framework: **Preact** (smallest bundle) vs React; decide with a measured bundle size, not preference
-- ADR-002 Persistence: **`UserRepository` interface; in-memory/file adapter for zero-setup review, Postgres (Neon) path documented**,
-  and be explicit that in-memory resets on serverless. If deploying live, use a hosted DB instead.
+- ADR-002 Persistence: **`UserRepository` interface; in-memory adapter for local/tests, Postgres (Neon) adapter for the live deploy**
+  (accepted, see decisions/ADR-002). In-memory resets on serverless, so it is never used in production.
 - ADR-003 Analytics: **PostHog behind a typed wrapper** (funnels + flags + experiments in one tool, fewer third-party scripts than GA4+GTM+Optimizely)
 - ADR-004 Experiment assignment: **middleware bucketing to avoid flicker**. Because the landing page is prerendered, either
   render each variant as a prerendered route and rewrite to it in middleware (CDN-cacheable, my recommendation), or render on demand. Decide with the caching trade-off written down.
 - ADR-005 Conversion source of truth: **server-confirmed event after 201**, not the button click
 
 ## Candidate experiment (decide and own it)
-Reduce friction vs add reassurance. Example: *"Email-only signup (control: email + name + password) will lift
-visit→signup_succeeded because each extra field costs conversion; guardrail: activation proxy within 24h."*
+Reduce friction vs add reassurance. Example: *"Email-only signup (variant) will lift
+visit→signup_succeeded over email + name (control) because each extra field costs conversion; guardrail: activation proxy within 24h."*
+The API already supports both arms: `email` required, `name` optional (see `api-contract.md`). The arms differ only in whether the form renders the name field.
 Pick one primary change. Stating the guardrail is what shows maturity.

@@ -47,8 +47,10 @@ in a 60-min technical review. Every non-trivial decision gets an ADR in `docs/de
 2. One validation source: the same schema validates client and server.
 3. Error shape is stable: `{ error: { code, message, fields? } }`. Never leak stack traces.
 4. Signup form states are explicit: idle, validating, submitting, success, field-error, server-error, network-error.
-5. Analytics are product code: events defined in `src/analytics/events.ts` (typed), never ad-hoc strings.
-   No PII in event properties (hash or omit email). Consent-aware.
+5. Analytics are product code: events defined in `src/analytics/events.ts` (typed registry = the property allow-list), never ad-hoc strings.
+   Build properties explicitly; never spread a domain object (e.g. `User`) into an event. No PII in event properties (omit email and name).
+   Consent model: cookieless SDK + one first-party visitor-id cookie (ADR-007; legal assumption pending). The conversion event
+   is emitted server-side, once, never on an idempotent replay. `docs/analytics-plan.md` is the source of truth for events.
 6. Performance budget: LCP < 2.0s, CLS < 0.05, INP < 200ms on mobile profile. No third-party script blocks render;
    analytics loads after interaction/idle.
 7. A11y: WCAG 2.2 AA. Real labels, `aria-live` for async status, visible focus, 4.5:1 contrast, keyboard-complete.
