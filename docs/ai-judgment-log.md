@@ -20,6 +20,21 @@ Copy the template below, paste at the top of the entries section, fill it in rig
 ```
 
 ## Entries
+### 2026-11-11 21:27 — Users API: tests first (red), implementation (green), and what the tests caught
+- **Phase / agent:** Phase 2 (build API), main thread (plan mode used first, per CLAUDE.md); `api-reviewer` is running separately (entry to follow when its report is read).
+- **Delegated:** P3.1 tests before implementation, P3.2 smallest implementation, P3.3 Vercel analysis.
+- **Prompt:** [docs/prompts/03-build-api.md](prompts/03-build-api.md)
+- **Output (summary):** 66 Vitest tests through the public handler interface; handlers, one error-mapping function, in-memory repository, two thin Astro route files.
+- **My judgment:** pending my read of the diff. The items below are what the AI itself caught or corrected during the work, recorded as facts.
+  - **Red was real:** 66/66 failed against stubs, and every failure was `expected 501 to be <status>` (one race test: `[501, 501]` vs `[201, 409]`). First red run failed inside a JSON parse of the stub's empty body, so the helper was changed to assert status first; otherwise the failures would have been for the wrong reason.
+  - **Test caught an AI implementation bug:** the cursor row was returned again on the next page, because the comparator returned -1 (not 0) for an identical position. 2 pagination tests failed, fixed in the comparator, 66/66 green.
+  - **AI over-specified a test and removed it:** it asserted 409 carries no `fields`, which the contract never states. A "determinism" test that reached into repository internals was removed (it broke "public handler interface only").
+  - **Sloppy AI output corrected in the same turn:** a nonsense ternary in the `invalid_cursor` branch of the GET handler, replaced before any test run.
+  - **Contract gap found by the test list:** no body-size rule existed for the "oversized body" case, so 413 `payload_too_large` + `MAX_BODY_BYTES` were added to the contract (AI-made, awaiting my review).
+  - **Unverified claim retracted:** ADR-002 said Vercel's filesystem is read-only/ephemeral; the Vercel pages fetched do not state it, so the ADR was softened to "unverified".
+- **Validation:** `vitest run` 66/66, `astro check` 0 errors, plus a curl smoke test against the real Astro dev server (201 / replay header / 409 / 415 / 422 / 405+Allow / PATCH) because the unit tests bypass Astro routing. The smoke test is the AI's own; the independent review is `api-reviewer`.
+- **Commit:** n/a (not committed by the AI)
+
 ### 2026-11-11 20:51 — Contract change from the tracking review: `X-Visitor-Id` (+ two AI-made choices still unreviewed)
 - **Phase / agent:** Phase 1 (contract), main thread
 - **Delegated:** implement my decision (e): visitor id reaches the server in an `X-Visitor-Id` header, zod-validated; variant read from the middleware cookie only. Update `src/contracts/users.ts` and `api-contract.md`; write ADR-007 and the new analytics plan.

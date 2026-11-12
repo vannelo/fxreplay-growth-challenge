@@ -10,6 +10,9 @@
  */
 import { z } from 'zod';
 
+/** Max request body for mutating endpoints. A valid body is well under 1 KB (email ≤254 + name ≤80 chars). */
+export const MAX_BODY_BYTES = 4096;
+
 /* ---------- Field primitives ---------- */
 
 export const Email = z
@@ -119,6 +122,7 @@ export type ListUsersResponse = z.infer<typeof ListUsersResponse>;
 export const ErrorCode = z.enum([
   'invalid_json', // body is not parseable JSON
   'unsupported_media_type', // Content-Type is not application/json
+  'payload_too_large', // body exceeds MAX_BODY_BYTES
   'validation_error', // schema failure (body, query, params, headers)
   'not_found', // no user with that id
   'email_taken', // unique email violated
@@ -133,6 +137,7 @@ export type ErrorCode = z.infer<typeof ErrorCode>;
 export const ERROR_STATUS = {
   invalid_json: 400,
   unsupported_media_type: 415,
+  payload_too_large: 413,
   validation_error: 422,
   not_found: 404,
   email_taken: 409,

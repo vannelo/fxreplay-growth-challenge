@@ -6,13 +6,14 @@
 
 ## Context
 The Users API ([contract](../api-contract.md)) needs create / update / list, a **unique email**, and **idempotent POST**.
-The live deploy is on Vercel (ADR-001), which is serverless: each function instance has its own memory and its own
-ephemeral filesystem, and instances start and stop freely. The brief leaves persistence open but asks for the rationale and trade-offs.
+The live deploy is on Vercel (ADR-001), which is serverless: function instances scale out (many copies, each with its own memory) and are created and
+recycled by the platform. (Vercel's docs confirm instances scale and that concurrent invocations can share one instance;
+they do not state filesystem behaviour, so any claim about a read-only/ephemeral filesystem is **unverified**.) The brief leaves persistence open but asks for the rationale and trade-offs.
 
 ## Options considered
 1. **In-memory only.** Zero setup. On serverless, each instance holds a different, short-lived copy: signups "succeed" then
    vanish, `GET /api/users` returns different data per request, and unique-email and idempotency are not enforced across instances. Wrong silently.
-2. **JSON file.** Same problem; Vercel's filesystem is read-only/ephemeral. Fine only locally.
+2. **JSON file.** Same per-instance problem (each instance would have its own file, if writable at all: unverified). Fine only locally.
 3. **Redis / KV (e.g. Upstash).** Durable and fast, but no unique constraint on a secondary field (email needs a manual lock/index), no ordered listing without extra structures.
 4. **Notion / Sheets.** Brief mentions Notion. Strict rate limits, no uniqueness or transactions, slow; fine for a demo, poor for a conversion endpoint.
 5. **Postgres (Neon) + in-memory adapter for local/tests.** Real constraints and transactions, serverless-friendly, free tier, branchable for CI. A hosted dependency to set up.

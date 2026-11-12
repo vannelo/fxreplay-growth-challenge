@@ -9,9 +9,9 @@ headers (a JSON POST from another origin needs a preflight, which we never appro
 
 | Endpoint | Success | Failures (trigger) |
 |---|---|---|
-| `POST /api/users` | **201** `{data: User}` + `Location: /api/users/:id` | 400 `invalid_json` (unparseable body) · 415 `unsupported_media_type` (not JSON) · 422 `validation_error` (bad/missing email, bad name, unknown key, missing/malformed `Idempotency-Key`) · 409 `email_taken` (email exists, different key) · 409 `request_in_progress` (same key still running) · 422 `idempotency_key_reuse` (same key, different payload) · 429 `rate_limited` (+`Retry-After`) · 500 `internal_error` |
+| `POST /api/users` | **201** `{data: User}` + `Location: /api/users/:id` | 400 `invalid_json` (unparseable body) · 415 `unsupported_media_type` (not JSON) · 413 `payload_too_large` (body > 4096 bytes, by `Content-Length` or actual size) · 422 `validation_error` (bad/missing email, bad name, unknown key, missing/malformed `Idempotency-Key`) · 409 `email_taken` (email exists, different key) · 409 `request_in_progress` (same key still running) · 422 `idempotency_key_reuse` (same key, different payload) · 429 `rate_limited` (+`Retry-After`) · 500 `internal_error` |
 | `POST /api/users` (replay: same key, same payload) | **201** original body + `Idempotent-Replayed: true` | as above |
-| `PATCH /api/users/:id` | **200** `{data: User}` | 400 `invalid_json` · 415 · 422 `validation_error` (id not a UUID, empty body, unknown/immutable key `id`/`createdAt`/`updatedAt`, bad email/name) · 404 `not_found` · 409 `email_taken` (new email belongs to another user) · 429 · 500 |
+| `PATCH /api/users/:id` | **200** `{data: User}` | 400 `invalid_json` · 415 · 413 · 422 `validation_error` (id not a UUID, empty body, unknown/immutable key `id`/`createdAt`/`updatedAt`, bad email/name) · 404 `not_found` · 409 `email_taken` (new email belongs to another user) · 429 · 500 |
 | `GET /api/users` | **200** `{data: User[], nextCursor: string \| null}` | 422 `validation_error` (`limit` not an int in 1..100; malformed/foreign `cursor`) · 429 · 500 |
 | any route, other method | n/a | 405 `method_not_allowed` (+`Allow`) |
 

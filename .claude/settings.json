@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx astro *)",
+      "Bash(pkill -f \"vitest run --root /\")"
+    ]
+  }
+}
