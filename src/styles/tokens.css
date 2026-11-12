@@ -87,9 +87,11 @@
   --card-bg-primary-hover: var(--dark-700);
   --card-bg-secondary-hover: var(--dark-600);
 
-  /* ---- Type (families only; weights per CLAUDE.md) ---- */
-  --font-display: 'Lato', 'Helvetica Neue', Arial, sans-serif;            /* 400 / 700 / 900 */
-  --font-body: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; /* 400 / 600 / 700 */
+  /* ---- Type ----
+   * Font families come ONLY from the Astro Fonts API variables (--font-lato, --font-nunito-sans; see astro.config.mjs and
+   * global.css). A literal family name here would shadow them: Astro registers the self-hosted faces under hashed names,
+   * so 'Nunito Sans' matched nothing and body text silently fell back to system fonts (perf audit finding).
+   */
   /* GAP: kit page also loads JetBrains Mono for its own labels; not part of the brand type system. Do not use. */
   /* ---- Proposed aliases (existing primitives only; pending design sign-off, docs/brand-questions.md) ---- */
   --text-link: var(--blue-400);          /* brand-coloured inline text: 7.0:1 on bg-primary, >=5.5:1 on the card (text-brand is 4.02:1 and blue-500 is 4.44:1 on the card: both fail AA) */

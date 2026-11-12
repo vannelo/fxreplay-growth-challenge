@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from 'preact/hooks';
 import { track } from '../../analytics/browser';
 import type { FieldName as AnalyticsField } from '../../analytics/events';
-import { claimLandingView, landingProps } from '../../analytics/landing';
+import { landingProps, landingViewTracked, markLandingViewTracked } from '../../analytics/landing';
 import type { Variant } from '../../lib/experiment';
 import { createUser, readVisitorId } from './signup-client';
 import { MESSAGES, announcement, initialState, isRetryable, reduce, type FieldName } from './signup-machine';
@@ -26,6 +26,13 @@ export default function SignupForm({ variant, signinUrl }: Props) {
   const startedRef = useRef(false); // signup_started fires once per page view
   const postsRef = useRef(0); // POSTs dispatched (the `attempt` property); not state.attempt, which also counts invalid submits
 
+  /** landing_viewed = funnel entry + experiment exposure. Retried on first focus if consent refused it at mount (e.g. a later CMP grant). */
+  const trackLanding = () => {
+    if (landingViewTracked()) return;
+    const props = landingProps({ search: location.search, referrer: document.referrer, pageOrigin: location.origin, viewportWidth: innerWidth });
+    if (track('landing_viewed', props)) markLandingViewTracked();
+  };
+
   const busy = state.status === 'submitting' || state.status === 'validating';
   const retry = isRetryable(state);
 
@@ -35,12 +42,9 @@ export default function SignupForm({ variant, signinUrl }: Props) {
     for (const [field, input] of [['email', emailRef.current], ['name', nameRef.current]] as const) {
       if (input?.value) dispatch({ type: 'edit', field, value: input.value });
     }
-    performance.mark('signup-hydrated'); // TEMP(G2): removed once the hydration directive is chosen from measurements
     setReady(true);
     // landing_viewed: funnel entry AND experiment exposure. Emitted from the island because it is the only JS on the page.
-    if (claimLandingView()) {
-      track('landing_viewed', landingProps({ search: location.search, referrer: document.referrer, pageOrigin: location.origin, viewportWidth: innerWidth }));
-    }
+    trackLanding();
   }, []);
 
   // Send the request when the machine enters `submitting`. The machine decided the key; this only performs I/O.
@@ -50,6 +54,10 @@ export default function SignupForm({ variant, signinUrl }: Props) {
     track('signup_submitted', { attempt: postsRef.current, name_provided: state.pending.payload.name !== undefined });
     let active = true;
     void createUser(state.pending.payload, state.pending.key, readVisitorId()).then((outcome) => {
+      // The platform (not our API) answered: the server could not report this failure, so the browser does.
+      if (outcome.kind === 'unavailable' && outcome.reported === false) {
+        track('signup_failed', { source: 'server', error_code: 'internal_error', retryable: true });
+      }
       if (active) dispatch({ type: 'outcome', outcome });
     });
     return () => {
@@ -77,6 +85,7 @@ export default function SignupForm({ variant, signinUrl }: Props) {
       (state.errors.email ? emailRef : nameRef).current?.focus();
     } else if (state.status === 'success') {
       successRef.current?.focus();
+      document.documentElement.dataset.signup = 'complete'; // lets the static page hide the now-pointless final CTA
     }
   }, [state.status, state.failure, state.attempt]); // `attempt`: a repeat of the SAME failure must move focus again
 
@@ -134,9 +143,10 @@ export default function SignupForm({ variant, signinUrl }: Props) {
           aria-label="Create your free account"
           onSubmit={onSubmit}
           onFocusIn={() => {
+            trackLanding();
             if (startedRef.current) return;
-            startedRef.current = true;
-            track('signup_started', { fields_shown: variant === 'control' ? ['email', 'name'] : ['email'] });
+            // Consumed only when actually queued (a refused first try must not lose the event).
+            startedRef.current = track('signup_started', { fields_shown: variant === 'control' ? ['email', 'name'] : ['email'] });
           }}
           class="rounded-2xl border border-border-secondary bg-card p-6 sm:p-8"
         >
@@ -212,7 +222,7 @@ export default function SignupForm({ variant, signinUrl }: Props) {
             disabled={!ready}
             // aria-disabled (not disabled) while busy: the button keeps focus, so keyboard and screen-reader users aren't dropped.
             aria-disabled={busy ? true : undefined}
-            class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-btn-primary px-5 py-3.5 text-base font-bold text-btn-text hover:bg-btn-primary-hover active:bg-btn-primary-pressed disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:cursor-progress"
+            class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg border-2 border-transparent bg-btn-primary px-5 py-3 text-base font-bold text-btn-text hover:bg-btn-primary-hover active:bg-btn-primary-pressed disabled:cursor-not-allowed disabled:opacity-60 aria-disabled:cursor-progress"
           >
             {busy && (
               <span

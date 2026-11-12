@@ -12,6 +12,13 @@ export class ApiError extends Error {
   }
 }
 
+/** On every API response: never cached (the list contains emails), never content-sniffed. */
+export const API_HEADERS = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } as const;
+
+export function apiJson(body: unknown, init: ResponseInit = {}): Response {
+  return Response.json(body, { ...init, headers: { ...API_HEADERS, ...(init.headers as Record<string, string> | undefined) } });
+}
+
 export function errorResponse(
   code: ErrorCode,
   message: string,
@@ -19,7 +26,17 @@ export function errorResponse(
   headers?: Record<string, string>,
 ): Response {
   const body: ErrorEnvelope = { error: { code, message, ...(fields && { fields }) } };
-  return Response.json(body, { status: ERROR_STATUS[code], headers });
+  return apiJson(body, { status: ERROR_STATUS[code], ...(headers && { headers }) });
+}
+
+/** What reaches the logs for an unexpected error: name + a message with credentials and emails removed. Never the stack's data. */
+export function redact(error: unknown): { name: string; message: string } {
+  const e = error instanceof Error ? error : new Error(String(error));
+  const message = e.message
+    .replace(/([a-z][a-z0-9+.-]*:\/\/)[^\s/@]+@/gi, '$1***@') // scheme://user:pass@host → scheme://***@host
+    .replace(/[^\s@"'<>]+@[^\s@"'<>]+\.[^\s@"'<>]+/g, '<email>')
+    .slice(0, 300);
+  return { name: e.name, message };
 }
 
 /** The only try/catch around handlers. Unknown errors are logged server-side and never reach the client. */
@@ -32,13 +49,16 @@ export function withErrors<Ctx>(
     try {
       return await handler(ctx);
     } catch (error) {
-      if (error instanceof ApiError) {
-        onError?.({ code: error.code, fields: error.fields }, ctx);
-        return errorResponse(error.code, error.message, error.fields, error.headers);
+      const failure = error instanceof ApiError ? { code: error.code, fields: error.fields } : { code: 'internal_error' as const };
+      if (!(error instanceof ApiError)) console.error('Unhandled error in Users API', redact(error));
+      try {
+        onError?.(failure, ctx); // an observer (analytics) must never change the response
+      } catch (observerError) {
+        console.error('Users API error observer threw (response unaffected)', redact(observerError).name);
       }
-      console.error('Unhandled error in Users API', error);
-      onError?.({ code: 'internal_error' }, ctx);
-      return errorResponse('internal_error', 'Something went wrong. Please try again.');
+      return error instanceof ApiError
+        ? errorResponse(error.code, error.message, error.fields, error.headers)
+        : errorResponse('internal_error', 'Something went wrong. Please try again.');
     }
   };
 }

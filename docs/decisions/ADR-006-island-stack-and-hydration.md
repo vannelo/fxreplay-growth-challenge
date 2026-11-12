@@ -1,6 +1,6 @@
 # ADR-006: Island stack: Preact + `zod/mini` contract; hydration directive from measurements
 
-- **Status:** Preact and `zod/mini`: **accepted**. Hydration directive: **proposed `client:load`, pending owner confirmation** (the temporary `HYDRATE_MODE` switch and the `signup-hydrated` mark stay in the code until then).
+- **Status:** **accepted**, including the hydration directive: **`client:load`** (confirmed by the owner 2026-11-12; the temporary `HYDRATE_MODE` switch and the `signup-hydrated` mark were removed). A re-measure after the P6 fixes gave time-to-hydrated 1497 ms (`load`) vs 1518 ms (`idle`), LCP equal, TBT 0: still a tie, decided by the pre-registered rule.
 - **Date:** 2026-11-12
 - **Decided by:** me for the framework and the contract port; the hydration rule was pre-registered by me before measuring (plan, "G2"). Claude ran every measurement.
 

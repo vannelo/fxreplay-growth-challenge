@@ -32,10 +32,9 @@ export function landingProps({ search, referrer, pageOrigin, viewportWidth }: La
   return props;
 }
 
-let fired = false;
-/** True exactly once per page view (a bfcache restore keeps module state, so it does not fire again). */
-export function claimLandingView(): boolean {
-  if (fired) return false;
-  fired = true;
-  return true;
-}
+let tracked = false;
+/** Once per page view: the flag is set only after the event was actually queued (consent may refuse the first try). */
+export const landingViewTracked = () => tracked;
+export const markLandingViewTracked = () => {
+  tracked = true;
+};

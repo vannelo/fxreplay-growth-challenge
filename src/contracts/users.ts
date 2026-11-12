@@ -22,12 +22,16 @@ export const Email = z.pipe(
   z.email({ error: 'Enter a valid email address' }).check(z.maxLength(254, { error: 'Email is too long' })),
 );
 
-/** Optional on create. Blank is NOT accepted: clients omit the key instead of sending "". No control/format characters. */
+/**
+ * Optional on create. Blank is NOT accepted: clients omit the key instead of sending "".
+ * Rejects control, surrogate, private-use and unassigned code points, zero-width space/BOM and bidi overrides,
+ * but ALLOWS ZWNJ/ZWJ (U+200C/U+200D): needed for Persian/Indic names and emoji sequences.
+ */
 export const Name = z.string().check(
   z.trim(),
   z.minLength(1, { error: 'Name cannot be empty' }),
   z.maxLength(80, { error: 'Name is too long (max 80)' }),
-  z.regex(/^[^\p{C}]*$/u, { error: 'Name contains invalid characters' }),
+  z.regex(/^[^\p{Cc}\p{Cs}\p{Co}\p{Cn}\u200B\u202A-\u202E\u2066-\u2069\uFEFF]*$/u, { error: 'Name contains invalid characters' }),
 );
 
 /* ---------- Analytics attribution header (ADR-007) ---------- */
@@ -108,8 +112,12 @@ export const LIST_MAX_LIMIT = 100;
 
 /** Query-string input: values arrive as strings, hence coerce. Order is fixed: newest first, id as tiebreak. */
 export const ListUsersQuery = z.object({
+  // Decimal digits only: `Number()` would otherwise accept "1e1", "0x2" or " " (audit finding).
   limit: z._default(
-    z.pipe(z.coerce.number(), z.int().check(z.gte(1), z.lte(LIST_MAX_LIMIT))),
+    z.pipe(
+      z.string().check(z.regex(/^[0-9]{1,3}$/, { error: `Must be a whole number from 1 to ${LIST_MAX_LIMIT}` })),
+      z.pipe(z.coerce.number<string>(), z.int().check(z.gte(1), z.lte(LIST_MAX_LIMIT))),
+    ),
     LIST_DEFAULT_LIMIT,
   ),
   /** Opaque to clients. Produced by the repository; a bad/foreign cursor → 422 on `cursor`. */
@@ -132,7 +140,6 @@ export const ErrorCode = z.enum([
   'validation_error', // schema failure (body, query, params, headers)
   'not_found', // no user with that id
   'email_taken', // unique email violated
-  'request_in_progress', // same Idempotency-Key still being processed
   'idempotency_key_reuse', // same Idempotency-Key, different payload
   'rate_limited', // too many requests (sets Retry-After)
   'method_not_allowed',
@@ -147,7 +154,6 @@ export const ERROR_STATUS = {
   validation_error: 422,
   not_found: 404,
   email_taken: 409,
-  request_in_progress: 409,
   idempotency_key_reuse: 422,
   rate_limited: 429,
   method_not_allowed: 405,
@@ -169,7 +175,9 @@ export type ErrorEnvelope = z.infer<typeof ErrorEnvelope>;
  * Issues with no field (e.g. the "at least one field" refinement) go under `_form`.
  */
 export function fieldErrorsFrom(error: z.core.$ZodError): Record<string, string[]> {
-  const fields: Record<string, string[]> = {};
+  // Null prototype: an unknown key named "__proto__", "constructor" or "toString" must become a field, not hit
+  // Object.prototype (that turned a 422 into a 500; audit finding).
+  const fields: Record<string, string[]> = Object.create(null);
   const add = (key: string, message: string) => (fields[key] ??= []).push(message);
   for (const issue of error.issues) {
     if (issue.code === 'unrecognized_keys') {

@@ -34,5 +34,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const response = await next();
   response.headers.set('Cache-Control', 'private, no-store'); // never let a shared cache serve one visitor's variant or Set-Cookie
+  // The CSP (incl. frame-ancestors) is Astro's security.csp header; X-Frame-Options covers browsers that predate frame-ancestors.
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
   return response;
 });

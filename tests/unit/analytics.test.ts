@@ -133,6 +133,7 @@ describe('client tracker', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]!.url).toBe('https://ph.test/batch/');
     expect(sent[0]!.body.api_key).toBe('phc_test');
+    expect((sent[0]!.body as unknown as { sent_at: string }).sent_at).toBe('2026-01-01T00:00:00.000Z'); // clock-skew correction
     expect(sent[0]!.body.batch.map((e) => e.event)).toEqual(['landing_viewed', 'signup_started', 'signup_submitted']);
   });
 
@@ -168,6 +169,23 @@ describe('client tracker', () => {
     runScheduled();
     expect(sent).toHaveLength(0);
   });
+
+  it('track() returns true only when the event was queued (so once-guards are not consumed by refused calls)', () => {
+    expect(tracker().t.track('landing_viewed', { device_class: 'mobile' })).toBe(true);
+    expect(tracker({ consent: () => false }).t.track('landing_viewed', { device_class: 'mobile' })).toBe(false);
+    expect(tracker({ key: undefined }).t.track('landing_viewed', { device_class: 'mobile' })).toBe(false);
+    expect(tracker({ cookies: () => '' }).t.track('landing_viewed', { device_class: 'mobile' })).toBe(false);
+  });
+
+  it.each([['not a uuid', 'fxr_vid=hello'], ['an email', 'fxr_vid=a@b.co'], ['empty', 'fxr_vid=']])(
+    'a tampered visitor-id cookie (%s) ⇒ nothing is sent, the value never becomes a distinct_id',
+    (_l, cookies) => {
+      const { t, sent, runScheduled } = tracker({ cookies: () => cookies });
+      expect(t.track('landing_viewed', { device_class: 'mobile' })).toBe(false);
+      runScheduled();
+      expect(sent).toHaveLength(0);
+    },
+  );
 
   it('no visitor-id cookie ⇒ nothing is sent (there is nothing to join on)', () => {
     const { t, sent, runScheduled } = tracker({ cookies: () => '' });

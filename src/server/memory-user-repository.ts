@@ -3,6 +3,7 @@
  * and cold starts wipe it. Idempotency keys never expire here (process lifetime); the Postgres adapter expires them at 24h.
  * Every method is synchronous inside (no `await` between check and write), which is what makes create atomic.
  */
+import * as z from 'zod/mini';
 import type { CreateUserBody, ListUsersQuery, UpdateUserBody, User } from '../contracts/users';
 import type { CreateResult, IdempotencyContext, ListResult, UpdateResult, UserRepository } from './user-repository';
 
@@ -16,13 +17,17 @@ interface Position {
   id: string;
 }
 
-const CURSOR_PATTERN = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)\|([0-9a-f-]{36})$/;
+const CURSOR_PATTERN = /^([^|]+)\|([^|]+)$/;
+const CursorParts = z.object({ createdAt: z.iso.datetime(), id: z.uuid() });
 
 const encodeCursor = ({ createdAt, id }: Position) => Buffer.from(`${createdAt}|${id}`, 'utf8').toString('base64url');
 
 function decodeCursor(cursor: string): Position | undefined {
   const match = CURSOR_PATTERN.exec(Buffer.from(cursor, 'base64url').toString('utf8'));
-  return match ? { createdAt: match[1]!, id: match[2]! } : undefined;
+  // Both halves must be real values (a date that exists, a UUID), not just the right shape: a Postgres adapter
+  // would otherwise turn "2026-99-99" into a 500 (audit finding).
+  const parts = match && CursorParts.safeParse({ createdAt: match[1], id: match[2] });
+  return parts?.success ? parts.data : undefined;
 }
 
 /** Newest first; id breaks ties between users created in the same millisecond. 0 only for the same position. */
@@ -35,7 +40,8 @@ function compareNewestFirst(a: Position, b: Position): number {
 export class MemoryUserRepository implements UserRepository {
   private readonly users = new Map<string, User>();
   private readonly idByEmail = new Map<string, string>();
-  private readonly keys = new Map<string, { requestHash: string; userId: string }>();
+  /** The response snapshot is stored with the key: a replay returns the ORIGINAL 201 body, even after a PATCH (contract). */
+  private readonly keys = new Map<string, { requestHash: string; user: User }>();
   private readonly now: () => Date;
   private readonly newId: () => string;
 
@@ -48,7 +54,7 @@ export class MemoryUserRepository implements UserRepository {
     const seen = this.keys.get(key);
     if (seen) {
       if (seen.requestHash !== requestHash) return { kind: 'key_reuse' };
-      return { kind: 'replayed', user: { ...this.users.get(seen.userId)! } }; // users are never deleted
+      return { kind: 'replayed', user: { ...seen.user } };
     }
     if (this.idByEmail.has(input.email)) return { kind: 'email_taken' };
 
@@ -62,7 +68,7 @@ export class MemoryUserRepository implements UserRepository {
     };
     this.users.set(user.id, user);
     this.idByEmail.set(user.email, user.id);
-    this.keys.set(key, { requestHash, userId: user.id });
+    this.keys.set(key, { requestHash, user: { ...user } });
     return { kind: 'created', user: { ...user } };
   }
 

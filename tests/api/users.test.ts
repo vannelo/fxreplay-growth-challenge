@@ -381,7 +381,11 @@ describe('failure handling', () => {
     expect(text).not.toContain('hunter2');
     expect(text).not.toContain('postgres');
     expect(text).not.toMatch(/\bat .*:\d+:\d+/); // no stack frames
-    expect(logged).toHaveBeenCalled(); // the detail goes to server logs, not the client
+    expect(logged).toHaveBeenCalled(); // the event is logged server-side...
+    const logText = JSON.stringify(logged.mock.calls);
+    expect(logText).not.toContain('hunter2'); // ...but redacted: credentials never reach the logs either
+    expect(logText).not.toContain('admin:');
+    expect(logText).toContain('Error'); // the error name is kept for debugging
     logged.mockRestore();
   });
 

@@ -49,7 +49,7 @@ export type Outcome =
   | { kind: 'email_taken' }
   | { kind: 'validation'; fields: Record<string, string[]> }
   | { kind: 'rate_limited'; retryAfter?: number }
-  | { kind: 'unavailable' }
+  | { kind: 'unavailable'; reported?: boolean }
   | { kind: 'network' };
 
 export type Action =
@@ -196,4 +196,6 @@ export function announcement(state: SignupState): string {
 }
 
 export const rateLimitedMessage = (retryAfter: number | null) =>
-  retryAfter ? `Too many attempts. Please wait ${retryAfter} seconds and try again.` : MESSAGES.rateLimited;
+  retryAfter
+    ? `Too many attempts. Please wait ${retryAfter} ${retryAfter === 1 ? 'second' : 'seconds'} and try again.`
+    : MESSAGES.rateLimited;

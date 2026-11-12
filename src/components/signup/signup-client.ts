@@ -44,7 +44,10 @@ export async function createUser(
     const retryAfter = Number(response.headers.get('Retry-After'));
     return { kind: 'rate_limited', ...(Number.isFinite(retryAfter) && retryAfter > 0 ? { retryAfter } : {}) };
   }
-  return { kind: 'unavailable' }; // 5xx, HTML error pages, and unexpected 4xx
+  // 5xx, HTML error pages, unexpected 4xx. `reported` = the API itself answered (with its error envelope), so the
+  // server already emitted signup_failed; false = the platform answered instead (502/504, crash, 403), so only the
+  // browser can report it (audit finding: infrastructure failures were invisible to the failure guardrail).
+  return { kind: 'unavailable', reported: envelope.success };
 }
 
 /** `fxr_vid` (ADR-007), if the browser has it. Sent as X-Visitor-Id; the server treats it as optional. */

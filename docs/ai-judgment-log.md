@@ -20,6 +20,69 @@ Copy the template below, paste at the top of the entries section, fill it in rig
 ```
 
 ## Entries
+### 2026-11-12 15:05 — Owner decisions on the last open items
+- **Phase / agent:** Phase 5, main thread. The AI asked; I decided.
+- **My judgment:**
+  - **Hydration = `client:load`.** Applied my pre-registered rule; both modes missed the 1 s threshold, which makes the rule's fallback `client:load`. In practice a tie (re-measure: 1497 vs 1518 ms, LCP equal).
+  - **`request_in_progress` removed** (unreachable, "no dead code").
+  - **Sign-in URL and PostHog key left unset** on purpose, documented in the README as required before the live deploy.
+  - **I will write `docs/architecture.md` and `docs/performance-review.md` myself**; P6.3 runs against them afterwards.
+- **What the AI changed:**
+  - Removed the temporary `HYDRATE_MODE` switch and the `signup-hydrated` mark.
+  - Reworked `scripts/measure-hydration.mjs` so it still runs on the real build: "interactive" is now when the server-disabled submit button is enabled, which is not the old performance mark, so it reads slightly later.
+  - Removed the error code from the contract and docs. One unit test had used it as "another 409"; it now uses a code outside the contract and expects `reported: false`.
+  - ADR-006 → accepted; ADR-002 dead-code section → resolved.
+  - README local setup and configuration table.
+- **Validation:** no leftovers (`grep`); `astro check` 0 errors; 227 Vitest; 94 Playwright. Measurement script on the final build (5 runs): interactive 1473 ms median, LCP 640 ms, TBT 0, worst interaction 32 ms, typed text lost 0/5.
+- **Commit:** n/a
+
+### 2026-11-12 14:52 — P6 audits (author ≠ reviewer) and the fix pass
+- **Phase / agent:** Phase 5 (audit). Independent read-only runs: `api-reviewer` (attacked the live production build), `a11y-auditor` (real browser this time), `analytics-architect` (tracking audit), then `perf-auditor` alone so its lab numbers weren't skewed. Fixes by the main thread. **Plan mode was skipped for the fix pass** because I said "address everything you can address now".
+- **Delegated:** finding bugs (each agent was told to assume they exist and to list what held up, so silence is evidence). Triage is mine; this entry records it.
+- **Spot-checks before accepting anything (the AI's own reproductions):** the prototype-key 500 (live: `toString`/`constructor`/`__proto__` → 500), the ZWNJ/ZWJ name rejections, the font bug (real browser: body computed to a literal `"Nunito Sans"`, all Nunito faces `unloaded`), and four of the tracking findings by reading the code and docs.
+- **Fixed (each with a regression test; the two Highs were also proven to FAIL with the bug put back):**
+  - **High:** body font was never Nunito Sans (a token literal shadowed Astro's hashed font variable).
+  - **High:** an unknown key named like an `Object.prototype` member made the API return 500.
+  - **Medium:** analytics `capture` throwing could turn a created signup into a 500. Two agents found this independently.
+  - **Medium:** request bodies are now capped while streaming, and invalid UTF-8 is a 400.
+  - **Medium:** a replay now returns the original 201 body (ADR-002 amended).
+  - **Medium:** platform failures (non-envelope 502/504/403) were invisible to the failure guardrail; the browser now reports them.
+  - **Medium:** once-guards were consumed before consent; a later grant now recovers the entry and started events.
+  - **Medium:** in forced colours the button and CTA had no boundary.
+  - **Low:**
+    - The client now validates the visitor-id cookie.
+    - Clock-skew correction via `sent_at` (verified in the PostHog docs; its exact position in the body is not documented).
+    - `PUBLIC_APP_ENV` now defaults to `prod`.
+    - `limit` accepts decimal digits only.
+    - Cursors must decode to a real date and a UUID.
+    - Names now allow Persian and emoji sequences.
+    - API responses are `no-store` + `nosniff`.
+    - Error logs are redacted; my own earlier test had pinned a connection string in the log, and it was flipped.
+    - "1 seconds" is now "1 second".
+    - The final CTA hides after success.
+    - The vacuous `pageshow` test was removed and a loose `toMatchObject` was tightened.
+  - **Gap closed:** CSP via Astro `security.csp`. Verified: on on-demand pages it is a real header with hashes, no `'unsafe-inline'`, `frame-ancestors 'none'`, and zero violations through a full signup.
+  - **Doc drift fixed:** stale SDK text in ADR-007 and the plan, the plan's back/forward overclaim, the `user_id` fallback contradiction, and `CLAUDE.md` lines that contradicted ADR-004/008.
+- **Deferred, with reason (to "what I'd do next"):**
+  - Rate limiting: needs a shared store or WAF; per-instance memory is false comfort on serverless.
+  - `$geoip_disable`: not found in the PostHog docs I checked.
+  - UTM charset restriction: it would drop legitimate campaign names; the real fix is a campaign allow-list.
+  - Double announcements: need a screen reader before changing.
+  - `modulepreload`: the agent measured it trading 440 ms of hydration for +220 ms of LCP.
+  - Compression and immutable cache headers: platform behaviour; Vercel's CDN sets them, not verified.
+  - INP, Lighthouse, field data.
+  - The Postgres adapter and the shared adapter test suite.
+- **Rejected:** typing `signup_failed.source` per emitter. The browser now legitimately reports platform failures as `source: server`.
+- **Left for the owner:** the hydration directive (ADR-006 proposes `client:load`; code still runs the temporary `idle` default), removing `request_in_progress`, the copy, `PUBLIC_SIGNIN_URL`, `PUBLIC_POSTHOG_KEY`.
+- **AI mistakes in this phase, all caught by running things:**
+  - **Stale server:** I told the owner the perf audit ran on a "fresh server". It ran on a stale process left by an earlier, stopped agent: my new server failed to bind the busy port, and my health check was answered by the old one. The perf agent noticed (the page 404'd its own assets).
+  - **My test helper:** it parsed error bodies with `z.record`, which itself drops a `__proto__` key, so one new test failed for the helper's reason, not the server's.
+  - **CSP test:** I first asserted a CSP `<meta>`; Astro sends a header on on-demand pages.
+  - **Unexplained:** the full-funnel test lost the API response body inside Chromium's DevTools protocol after this batch; not reproduced in isolation. The test now reads the body through `route.fetch`. Root cause unknown.
+- **Validation:** `astro check` 0 errors; 227 Vitest; 94 Playwright (production build, mobile + desktop). Clean lab re-measure (10 runs per mode, Pixel 7, 4x CPU, 1.6 Mbps/150 ms): LCP median 636–652 ms, TBT 0, typed text lost 0. **Time-to-hydrated rose to ~1.50 s from ~1.31 s.** My hypothesis, unverified: the body font now actually loads and competes for the throttled link.
+- **Not verified:** VoiceOver/NVDA speech, Safari/Firefox, real devices, the Vercel deployment, a real PostHog project, P6.3 (`performance-review.md` and `architecture.md` don't exist yet).
+- **Commit:** n/a
+
 ### 2026-11-12 14:18 — P5 instrumentation: typed analytics, server-side conversion, data-level tests
 - **Phase / agent:** Phase 4 (instrument), main thread (plan mode first). No specialist agent ran; the independent check is the sabotage run below, which is the AI testing its own work.
 - **Delegated:** P5.1 typed wrapper + server emit, P5.2 Playwright tests that assert the data.

@@ -35,11 +35,11 @@ describe('createUser: classification', () => {
     expect(await createUser(payload, KEY, VISITOR, fakeFetch(json(201, { data: {} })))).toEqual({ kind: 'created' });
   });
 
-  it('409 email_taken → email_taken; any other 409 → unavailable', async () => {
+  it('409 email_taken → email_taken; a 409 with a code outside the contract → unavailable, not reported by our API', async () => {
     const taken = json(409, { error: { code: 'email_taken', message: 'x' } });
     expect(await createUser(payload, KEY, VISITOR, fakeFetch(taken))).toEqual({ kind: 'email_taken' });
-    const other = json(409, { error: { code: 'request_in_progress', message: 'x' } });
-    expect(await createUser(payload, KEY, VISITOR, fakeFetch(other))).toEqual({ kind: 'unavailable' });
+    const unknown = json(409, { error: { code: 'something_else', message: 'x' } });
+    expect(await createUser(payload, KEY, VISITOR, fakeFetch(unknown))).toEqual({ kind: 'unavailable', reported: false });
   });
 
   it('422 validation_error → validation with the server fields', async () => {
@@ -47,9 +47,9 @@ describe('createUser: classification', () => {
     expect(await createUser(payload, KEY, VISITOR, fakeFetch(res))).toEqual({ kind: 'validation', fields: { email: ['bad'] } });
   });
 
-  it('422 idempotency_key_reuse is not a field problem → unavailable', async () => {
+  it('422 idempotency_key_reuse is not a field problem → unavailable (reported by the API)', async () => {
     const res = json(422, { error: { code: 'idempotency_key_reuse', message: 'x' } });
-    expect(await createUser(payload, KEY, VISITOR, fakeFetch(res))).toEqual({ kind: 'unavailable' });
+    expect(await createUser(payload, KEY, VISITOR, fakeFetch(res))).toEqual({ kind: 'unavailable', reported: true });
   });
 
   it('429 → rate_limited, with Retry-After when valid', async () => {
@@ -61,13 +61,19 @@ describe('createUser: classification', () => {
     expect(await createUser(payload, KEY, VISITOR, fakeFetch(junk))).toEqual({ kind: 'rate_limited' });
   });
 
-  it('5xx JSON, 5xx HTML and unexpected 4xx → unavailable (never throws on a non-JSON body)', async () => {
+  it('a 5xx from OUR API (error envelope) → unavailable, reported: true (the server already emitted signup_failed)', async () => {
+    const res = json(500, { error: { code: 'internal_error', message: 'x' } });
+    expect(await createUser(payload, KEY, VISITOR, fakeFetch(res))).toEqual({ kind: 'unavailable', reported: true });
+  });
+
+  it('a PLATFORM answer (HTML 502/504, empty 413, plain-text 403) → unavailable, reported: false (only the browser can report it)', async () => {
     const cases = [
-      json(500, { error: { code: 'internal_error', message: 'x' } }),
       new Response('<html>Bad gateway</html>', { status: 502 }),
+      new Response('<html>Gateway timeout</html>', { status: 504 }),
       new Response('', { status: 413 }),
+      new Response('Cross-site POST form submissions are forbidden', { status: 403 }),
     ];
-    for (const res of cases) expect(await createUser(payload, KEY, VISITOR, fakeFetch(res))).toEqual({ kind: 'unavailable' });
+    for (const res of cases) expect(await createUser(payload, KEY, VISITOR, fakeFetch(res))).toEqual({ kind: 'unavailable', reported: false });
   });
 
   it('a rejected fetch (offline, DNS, timeout/abort) → network', async () => {

@@ -33,6 +33,7 @@ function instance(): Tracker {
   return tracker;
 }
 
-export function track<K extends ClientEventName>(name: K, props: EventMap[K]): void {
-  instance().track(name, props);
+/** true = queued for sending (see createTracker). */
+export function track<K extends ClientEventName>(name: K, props: EventMap[K]): boolean {
+  return instance().track(name, props);
 }

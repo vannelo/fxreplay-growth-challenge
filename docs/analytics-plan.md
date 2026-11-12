@@ -5,11 +5,11 @@ Consent/identity model: [ADR-007](decisions/ADR-007-consent-and-visitor-id.md). 
 Tool: PostHog (events, funnels) behind a typed thin HTTP client, not `posthog-js` ([ADR-003](decisions/ADR-003-analytics-client.md)). Consent gate: Global Privacy Control, [ADR-007](decisions/ADR-007-consent-and-visitor-id.md). Experiment: `signup_fields`, arms `control` (email + name) and `email_only`.
 
 ## Context attached to every event
-Registered once (client super-properties; read from cookies server-side), so intermediate events do not repeat them.
+Attached to every event by the tracker (browser: from the cookies; server: from the cookie and `X-Visitor-Id`), so events never repeat them.
 
 | Context | Type | Source |
 |---|---|---|
-| `distinct_id` | uuid | `fxr_vid` cookie (first-party random id; never an email or user id) |
+| `distinct_id` | uuid | `fxr_vid` cookie (first-party random UUID, validated before use; never an email). **One exception:** a server conversion from a visitor with no valid id is sent under its `user_id` with `variant: "unattributed"`; exclude `unattributed` from per-variant metrics |
 | `experiment` | `"signup_fields"` | constant |
 | `variant` | `"control"` \| `"email_only"` \| `"unattributed"` | `fxr_variant` cookie, set by middleware. Server reads the cookie only. `unattributed` = no cookie |
 | `env` | `"prod"` \| `"preview"` \| `"dev"` \| `"test"` | build config; each env uses its own PostHog project key |
@@ -19,10 +19,10 @@ Owner for all: **Growth Engineering**. `?` = optional. Property values are limit
 
 | Event | Emitted by | Trigger | Properties (type) | Notes |
 |---|---|---|---|---|
-| `landing_viewed` | client | Landing page rendered, once per page view. Not on bfcache restore (`pageshow` with `persisted`). SDK `$pageview` disabled. | `utm_source?`, `utm_medium?`, `utm_campaign?`, `utm_content?`, `utm_term?` (string, ≤100 chars, allow-listed keys only), `referrer_origin?` (string, **origin only**, no path/query), `device_class` (`"mobile"` \| `"tablet"` \| `"desktop"`) | Funnel entry **and** the experiment exposure (the variant is rendered when this fires), so there is no separate exposure event. |
+| `landing_viewed` | client | The island hydrated (the page's only JS), once per page view; retried on first focus if consent refused it at load. A reload is a new page view (the page is `no-store`). | `utm_source?`, `utm_medium?`, `utm_campaign?`, `utm_content?`, `utm_term?` (string, ≤100 chars, allow-listed keys only), `referrer_origin?` (string, **origin only**, no path/query), `device_class` (`"mobile"` \| `"tablet"` \| `"desktop"`) | Funnel entry **and** the experiment exposure (the variant is rendered when this fires), so there is no separate exposure event. |
 | `signup_started` | client | First `focusin` inside the signup form, once per page view. The form never autofocuses. | `fields_shown` (`("email"\|"name")[]`) | Engagement signal, not intent. Autofill can fire it. |
 | `signup_submitted` | client | Client validation passed **and** the POST is dispatched. Button disabled while pending. One per POST. | `attempt` (int ≥ 1, per page view), `name_provided` (boolean) | A fix-and-resubmit counts again, so funnels use unique visitors. A retry reuses the `Idempotency-Key`. |
-| `signup_failed` | client **or** server | Client: validation failed (`client_validation`) or the request never got a response (`network`). Server: handler returns 409/422/5xx (`server`). Never both for one failure. 429 emits nothing. | `source` (`"client_validation"` \| `"server"` \| `"network"`), `error_code` (contract `ErrorCode` \| `"network_error"`), `failed_fields?` (`("email"\|"name")[]`, names only), `retryable` (boolean) | Never carries values, messages or `field` text. `email_taken` is a code here and reported on its own. |
+| `signup_failed` | client **or** server | Client: validation failed (`client_validation`) or the request never got a response (`network`). Server: handler returns 409/422/5xx (`server`). The browser also reports, as `server`, a failure our API could not report itself (no error envelope: platform 502/504, 403). Never both for one answered failure. 429 emits nothing. | `source` (`"client_validation"` \| `"server"` \| `"network"`), `error_code` (contract `ErrorCode` \| `"network_error"`), `failed_fields?` (`("email"\|"name")[]`, names only), `retryable` (boolean) | Never carries values, messages or `field` text. `email_taken` is a code here and reported on its own. |
 | `signup_succeeded` | **server** | `POST /api/users` first-time 201, after DB commit. **Not** on replay (`Idempotent-Replayed: true`). | `user_id` (uuid, not PII), `name_provided` (boolean) | **Primary conversion.** `$insert_id` = `user_id`. Properties are built explicitly, never from the `User` object. |
 
 Removed from the draft, with reasons: `cta_clicked` (the form is in the hero, visible on load, so `signup_started` is the intent step), `experiment_exposed` (same moment as `landing_viewed`; two events for one fact), `idempotency_key` (per-attempt id, not a user key), `variant` as a repeated per-event property (now context).
@@ -41,13 +41,15 @@ Counted as **unique `distinct_id`s**, broken down by `variant`. Conversion windo
 - Both arms share the bias, so the **A/B comparison is mostly safe, the absolute rate is not.** Report arm-vs-arm deltas, and label any absolute rate "of measured visitors".
 - Visitors with cookies blocked have no id: their conversions arrive as `variant: "unattributed"`. Report that share. If it is more than a small fraction, investigate before trusting the experiment.
 - A returning visitor on a different device or after clearing cookies is a new visitor (equal in both arms).
+- `landing_viewed` fires when the island hydrates: a visitor who leaves before that is in neither the exposure nor the denominator. Same for both arms, but the sample-ratio check is conditional on hydration.
+- A timed-out request is reported as a network failure, yet may have succeeded (the retry then replays and the conversion is counted once). The failure rate therefore includes a few successes; read it as "failures or ambiguous outcomes".
 
 ## Data quality: how we know the numbers are right
 | Check | How | When |
 |---|---|---|
 | Server conversion = database | Daily: count `signup_succeeded` vs rows created in `users`. They should match; a gap means dropped or double-fired events. | Production, scheduled |
 | Sample ratio mismatch | Chi-square of `landing_viewed` counts per arm against the intended split. A mismatch invalidates the experiment, whatever the metric says. | Before reading any result |
-| Fires exactly once | **Implemented** (`tests/e2e/analytics.spec.ts`, against a local capture sink): one full flow → exactly one `landing_viewed`, `signup_started`, `signup_submitted`, `signup_succeeded` on the capture sink; back/forward and reload don't re-fire the entry or conversion event. Double-click submit → one POST. | CI |
+| Fires exactly once | **Implemented** (`tests/e2e/analytics.spec.ts`, against a local capture sink): one full flow → exactly one `landing_viewed`, `signup_started`, `signup_submitted`, `signup_succeeded` on the capture sink; a reload is one new `landing_viewed` and no re-fired `signup_*` (back/forward on this `no-store` page is a reload). Double-click submit → one POST. | CI |
 | Replay safe | API test: same key + body twice → one `signup_succeeded`. | CI |
 | No PII | CI test: no event property value matches an email regex or equals the submitted name; registry rejects properties not in the allow-list (no spreading `User`). | CI |
 | Nothing stored by analytics | Playwright: after a full flow, only `fxr_vid` and `fxr_variant` cookies exist and localStorage/sessionStorage are empty. | CI |

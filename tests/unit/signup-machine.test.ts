@@ -131,6 +131,11 @@ describe('outcomes → states', () => {
     expect(announcement(s)).toContain('30 seconds');
   });
 
+  it('Retry-After of 1 reads "1 second", not "1 seconds" (a11y audit)', () => {
+    expect(announcement(withOutcome(submitting(), { kind: 'rate_limited', retryAfter: 1 }))).toBe('Too many attempts. Please wait 1 second and try again.');
+    expect(announcement(withOutcome(submitting(), { kind: 'rate_limited', retryAfter: 2 }))).toContain('2 seconds');
+  });
+
   it('5xx → serverError(unavailable); network → networkError', () => {
     expect(withOutcome(submitting(), { kind: 'unavailable' })).toMatchObject({ status: 'serverError', failure: 'unavailable' });
     expect(withOutcome(submitting(), { kind: 'network' }).status).toBe('networkError');

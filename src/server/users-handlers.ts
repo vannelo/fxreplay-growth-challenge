@@ -13,7 +13,7 @@ import {
 } from '../contracts/users';
 import type { FieldName } from '../analytics/events';
 import type { ServerAnalytics } from '../analytics/server';
-import { ApiError, errorResponse, withErrors } from './errors';
+import { ApiError, apiJson, errorResponse, redact, withErrors } from './errors';
 import type { UserRepository } from './user-repository';
 
 /** The subset of Astro's APIContext the handlers use. APIRoute is assignable to this shape. */
@@ -25,20 +25,49 @@ export type UsersHandler = (ctx: HandlerContext) => Promise<Response>;
 
 /* ---------- request helpers ---------- */
 
-/** Transport checks in order: media type (415) → size (413) → JSON syntax (400). Schema validation happens after. */
+const tooLarge = () => new ApiError('payload_too_large', `Request body must be at most ${MAX_BODY_BYTES} bytes`);
+
+/**
+ * Reads at most MAX_BODY_BYTES and stops the stream as soon as that is exceeded, so a chunked body with no
+ * Content-Length cannot make the server buffer megabytes before saying no (audit finding).
+ */
+async function readCapped(request: Request): Promise<Uint8Array> {
+  if (!request.body) return new Uint8Array(0);
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_BODY_BYTES) {
+      await reader.cancel();
+      throw tooLarge();
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
+/** Transport checks in order: media type (415) → size (413) → UTF-8 + JSON syntax (400). Schema validation happens after. */
 async function readJsonBody(request: Request): Promise<unknown> {
   const mediaType = request.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase();
   if (mediaType !== 'application/json') {
     throw new ApiError('unsupported_media_type', 'Content-Type must be application/json');
   }
-  const tooLarge = () => new ApiError('payload_too_large', `Request body must be at most ${MAX_BODY_BYTES} bytes`);
   if (Number(request.headers.get('content-length')) > MAX_BODY_BYTES) throw tooLarge();
-  const text = await request.text();
-  if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) throw tooLarge();
+  const bytes = await readCapped(request);
   try {
-    return JSON.parse(text);
+    // fatal: invalid UTF-8 is an error, never silently replaced with U+FFFD and stored (audit finding)
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
   } catch {
-    throw new ApiError('invalid_json', 'Request body is not valid JSON');
+    throw new ApiError('invalid_json', 'Request body is not valid UTF-8 JSON');
   }
 }
 
@@ -47,7 +76,7 @@ const invalidFields = (fields: Record<string, string[]>) =>
 
 /** One 422 for everything wrong with a request (body, headers, params, query), not one problem at a time. */
 function validationError(...errors: Array<z.core.$ZodError | undefined>): ApiError {
-  const fields: Record<string, string[]> = {};
+  const fields: Record<string, string[]> = Object.create(null); // see fieldErrorsFrom: keys like "__proto__" are data
   for (const error of errors) {
     if (!error) continue;
     for (const [field, messages] of Object.entries(fieldErrorsFrom(error))) (fields[field] ??= []).push(...messages);
@@ -72,6 +101,15 @@ const isField = (key: string): key is FieldName => key === 'email' || key === 'n
 /* ---------- handlers ---------- */
 
 export function createUsersHandlers(repo: UserRepository, analytics: ServerAnalytics) {
+  /** Analytics is an observer: whatever it does (including a strict-mode throw in dev/test), the HTTP response stands. */
+  const emit: ServerAnalytics['capture'] = (event, request) => {
+    try {
+      analytics.capture(event, request);
+    } catch (error) {
+      console.error('analytics capture threw (response unaffected)', redact(error));
+    }
+  };
+
   const POST = withErrors<HandlerContext>(async ({ request }) => {
     const raw = await readJsonBody(request);
     const body = CreateUserBody.safeParse(raw);
@@ -85,13 +123,10 @@ export function createUsersHandlers(repo: UserRepository, analytics: ServerAnaly
     switch (result.kind) {
       case 'created':
         // The conversion: server-confirmed, once, after the commit. A replay (below) is NOT counted again.
-        analytics.capture(
-          { name: 'signup_succeeded', props: { user_id: result.user.id, name_provided: result.user.name !== null } },
-          request,
-        );
-        return Response.json({ data: result.user }, { status: 201, headers: { Location: `/api/users/${result.user.id}` } });
+        emit({ name: 'signup_succeeded', props: { user_id: result.user.id, name_provided: result.user.name !== null } }, request);
+        return apiJson({ data: result.user }, { status: 201, headers: { Location: `/api/users/${result.user.id}` } });
       case 'replayed':
-        return Response.json(
+        return apiJson(
           { data: result.user },
           { status: 201, headers: { Location: `/api/users/${result.user.id}`, [IDEMPOTENCY_REPLAYED_HEADER]: 'true' } },
         );
@@ -103,7 +138,7 @@ export function createUsersHandlers(repo: UserRepository, analytics: ServerAnaly
   }, ({ code, fields }, { request }) => {
     if (!COUNTED_FAILURES.has(code)) return;
     const failedFields = Object.keys(fields ?? {}).filter(isField);
-    analytics.capture(
+    emit(
       {
         name: 'signup_failed',
         props: { source: 'server', error_code: code, retryable: code === 'internal_error', ...(failedFields.length ? { failed_fields: failedFields } : {}) },
@@ -121,7 +156,7 @@ export function createUsersHandlers(repo: UserRepository, analytics: ServerAnaly
     const result = await repo.update(param.data.id, body.data);
     switch (result.kind) {
       case 'updated':
-        return Response.json({ data: result.user });
+        return apiJson({ data: result.user });
       case 'not_found':
         throw new ApiError('not_found', 'User not found');
       case 'email_taken':
@@ -135,7 +170,7 @@ export function createUsersHandlers(repo: UserRepository, analytics: ServerAnaly
 
     const result = await repo.list(query.data);
     if (result.kind === 'invalid_cursor') throw invalidFields({ cursor: ['Invalid cursor'] });
-    return Response.json(result.page);
+    return apiJson(result.page);
   });
 
   return {

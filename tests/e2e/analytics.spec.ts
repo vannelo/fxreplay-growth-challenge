@@ -44,15 +44,28 @@ const view = (events: Sent[], vid: string, userId?: string) =>
 const context = (variant = 'control') => ({ experiment: 'signup_fields', variant, env: 'test' });
 const deviceFor = (page: Page) => ((page.viewportSize()?.width ?? 1280) < 768 ? 'mobile' : 'desktop');
 
+/**
+ * Drives the funnel and returns the REAL API response (status + JSON). The body is read in Node through the route
+ * (`route.fetch` passes the server's response through unchanged): reading it back from Chromium's DevTools protocol
+ * failed in this flow ("No data found for resource"), which I could not reproduce in isolation, so the test no longer
+ * depends on it.
+ */
 async function doFunnel(page: Page, email: string, name = 'Ada Lovelace') {
+  let captured: { status: number; body: { data: { id: string } } } | undefined;
+  await page.route('**/api/users', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const response = await route.fetch();
+    captured = { status: response.status(), body: await response.json() };
+    await route.fulfill({ response });
+  });
   await emailInput(page).focus(); // → signup_started
   await emailInput(page).fill('nope');
   await submitButton(page).click(); // → signup_failed (client_validation)
   await emailInput(page).fill(email);
   await page.getByLabel('Name (optional)').fill(name);
-  const response = page.waitForResponse((r) => r.url().endsWith('/api/users') && r.request().method() === 'POST');
   await submitButton(page).click(); // → signup_submitted, then the server emits signup_succeeded
-  return response;
+  await expect.poll(() => captured?.status, { message: 'waiting for the signup API response' }).toBeDefined();
+  return captured!;
 }
 
 test.describe('analytics: the data that leaves the page', () => {
@@ -60,8 +73,8 @@ test.describe('analytics: the data that leaves the page', () => {
     const email = uniqueEmail();
     const vid = await openLanding(page, 'control', '?utm_source=google&utm_medium=cpc&utm_campaign=spring&gclid=SECRET-CLICK-ID&email=leak%40example.com&foo=bar');
     const response = await doFunnel(page, email, 'Ada Lovelace');
-    expect(response.status()).toBe(201);
-    const userId = (await response.json()).data.id as string;
+    expect(response.status).toBe(201);
+    const userId = response.body.data.id;
 
     const events = await eventsOf(page, vid, 5);
 
@@ -124,7 +137,12 @@ test.describe('analytics: the data that leaves the page', () => {
       ['signup_submitted', 'fxr-web'],
       ['signup_failed', 'fxr-server'],
     ]);
-    expect(events[3]!.properties).toMatchObject({ source: 'server', error_code: 'email_taken', retryable: false });
+    expect(view(events, vid)[3]).toEqual({
+      event: 'signup_failed',
+      lib: 'fxr-server',
+      distinct_id: '<visitor>',
+      props: { ...context(), source: 'server', error_code: 'email_taken', retryable: false }, // exact: no extra (leaked) properties
+    });
     expect(JSON.stringify(events)).not.toContain(taken);
   });
 
@@ -151,7 +169,7 @@ test.describe('analytics: the data that leaves the page', () => {
     const email = uniqueEmail();
     const vid = await openLanding(page);
     const response = await doFunnel(page, email);
-    expect(response.status()).toBe(201);
+    expect(response.status).toBe(201);
     await expect(page.getByRole('heading', { name: 'Account created' })).toBeVisible();
     await page.evaluate(() => dispatchEvent(new Event('pagehide')));
     await page.waitForTimeout(2500); // longer than the 2 s idle flush window: if anything were going to be sent, it would have been
@@ -171,7 +189,7 @@ test.describe('analytics: the data that leaves the page', () => {
     expect(events.map((e) => e.event)).toEqual(['landing_viewed', 'signup_started', 'signup_submitted', 'signup_succeeded']);
   });
 
-  test('reload after success ⇒ no signup_* re-fires (the new page view is a new landing_viewed); a bfcache-style pageshow adds nothing', async ({ page }) => {
+  test('reload after success ⇒ no signup_* re-fires (the reload is a new page view, so a new landing_viewed)', async ({ page }) => {
     const vid = await openLanding(page);
     await emailInput(page).fill(uniqueEmail());
     await submitButton(page).click();
@@ -180,18 +198,54 @@ test.describe('analytics: the data that leaves the page', () => {
 
     await page.reload();
     await expect(submitButton(page)).toBeEnabled();
-    let events = await eventsOf(page, vid, 5);
+    const events = await eventsOf(page, vid, 5);
     expect(events.filter((e) => e.event === 'signup_succeeded')).toHaveLength(1);
     expect(events.filter((e) => e.event === 'signup_submitted')).toHaveLength(1);
     expect(events.filter((e) => e.event === 'landing_viewed')).toHaveLength(2);
+  });
 
-    await page.evaluate(() => {
-      dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
-      document.dispatchEvent(new Event('visibilitychange'));
+  test('a PLATFORM failure (HTML 502, our API never ran) is reported by the browser, once, as a server failure', async ({ page }) => {
+    const vid = await openLanding(page);
+    await interceptSignup(page, (route) => route.fulfill({ status: 502, contentType: 'text/html', body: '<html>Bad gateway</html>' }));
+    await emailInput(page).fill(uniqueEmail());
+    await submitButton(page).click();
+    await expect(page.locator('#signup form').getByText('Something went wrong on our side. Please try again.')).toBeVisible();
+    const events = await eventsOf(page, vid, 4);
+    expect(view(events, vid)[3]).toEqual({
+      event: 'signup_failed',
+      lib: 'fxr-web',
+      distinct_id: '<visitor>',
+      props: { ...context(), source: 'server', error_code: 'internal_error', retryable: true },
     });
-    await page.waitForTimeout(500);
-    events = await sentBy(vid);
-    expect(events.filter((e) => e.event === 'landing_viewed')).toHaveLength(2);
+  });
+
+  test('a server 422 shown inline is NOT also reported by the browser (the server owns that event)', async ({ page }) => {
+    const vid = await openLanding(page);
+    await interceptSignup(page, (route) =>
+      fulfillJson(route, 422, { error: { code: 'validation_error', message: 'x', fields: { email: ['Enter a valid email address'] } } }),
+    );
+    await emailInput(page).fill('looks-valid@example.com');
+    await submitButton(page).click();
+    await expect(page.locator('#signup-email-error')).toHaveText('Enter a valid email address');
+    const events = await eventsOf(page, vid, 3);
+    expect(events.map((e) => e.event)).toEqual(['landing_viewed', 'signup_started', 'signup_submitted']);
+  });
+
+  test('consent refused at load and granted later (CMP-style) ⇒ the entry and started events are recovered, not lost', async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as unknown as { __gpc: boolean }).__gpc = true;
+      Object.defineProperty(navigator, 'globalPrivacyControl', { get: () => (window as unknown as { __gpc: boolean }).__gpc });
+    });
+    const vid = await openLanding(page);
+    await emailInput(page).focus(); // refused: consent not given yet
+    await page.locator('h1').click();
+    await page.waitForTimeout(300);
+    expect(await sentBy(vid)).toEqual([]);
+
+    await page.evaluate(() => ((window as unknown as { __gpc: boolean }).__gpc = false)); // the visitor grants consent
+    await emailInput(page).focus();
+    const events = await eventsOf(page, vid, 2);
+    expect(events.map((e) => e.event)).toEqual(['landing_viewed', 'signup_started']);
   });
 
   test('idempotent replay (same key + body twice) ⇒ both 201, exactly ONE conversion', async ({ request }) => {

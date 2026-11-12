@@ -23,16 +23,18 @@ in a 60-min technical review. Every non-trivial decision gets an ADR in `docs/de
   config option, or integration, check docs.astro.build (and the installed package's types). Never write Astro code from memory.
 - **Zero JS by default.** `.astro` components for everything static. Hydrate only the signup form, with the cheapest
   directive that works (`client:visible` or `client:idle`; `client:load` only if justified by a measurement).
-- **Static landing page, on-demand API.** The page is prerendered (`export const prerender = true`); only `/api/*` runs on the server.
-  Use the adapter's per-route rendering, not whole-site SSR.
+- **Landing page rendered on demand, by decision (ADR-004):** Astro middleware does not run for prerendered pages on Vercel, and
+  the experiment needs it. Production path: an edge rewrite to two prerendered variants. Everything else static; per-route rendering, not whole-site SSR.
 - **Server Islands / `server:defer`** only for genuinely personalized fragments. Not needed for v1; don't add for show.
 - **Experiments without flicker:** assign variants in middleware/edge, render the variant on the server. Never swap content client-side after paint.
 - **Fonts:** use Astro's built-in font handling (check current docs for the stable API); self-host Lato + Nunito Sans, subset, preload only the LCP-critical weights.
 - **Images:** `astro:assets` (`<Image>`/`<Picture>`), explicit dimensions, AVIF/WebP, `fetchpriority="high"` on the LCP image only.
 - **Env/secrets:** `astro:env` schema with `context`/`access` set correctly. Public analytics key = client/public; anything else server-secret.
 - **Types:** `astro check` in CI; `Astro.locals` typed via `env.d.ts`.
-- **Security:** CSRF/Origin check on mutating endpoints (verify Astro's `security.checkOrigin` behavior in the installed version), CSP via headers/middleware, rate limit POST.
-- **Tests:** Vitest with `getViteConfig()` for units/API; Playwright against `astro build && astro preview` (production output), never `astro dev`.
+- **Security:** Astro's `security.checkOrigin` covers only form-style content types; JSON endpoints rely on 415 + no CORS approval.
+  CSP = Astro `security.csp` (sent as a hashed header on on-demand pages). Rate limiting POST is NOT built (needs a shared store or WAF).
+- **Tests:** Vitest with `getViteConfig()` for units/API; Playwright against the production build served by the Node adapter
+  (`astro preview` does not support the Vercel adapter, ADR-008), never `astro dev`.
 - **Considered and not chosen for the Users API:** Astro Actions. Great DX for forms, but the brief asks for a Users REST API
   (create/update/list); a real HTTP contract is more reviewable and reusable. Revisit in the review if asked (ADR-001).
 

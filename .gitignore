@@ -6,3 +6,6 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+.playwright-mcp/
+test-results/
+playwright-report/

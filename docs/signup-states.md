@@ -11,7 +11,7 @@ Pure reducer: `signup-machine.ts` (unit-tested). I/O: `signup-client.ts`. UI: `S
 | `success` | "Account created" panel, focus on its heading, no redirect | "Account created." | none (server emits `signup_succeeded`) |
 | `serverError` · 409 | Email field flagged and focused, "This email already has an account. Sign in instead, or use a different email." + "Sign in" link when `PUBLIC_SIGNIN_URL` is set, plain text when it is not (no invented URL) | same message | none (server emits `signup_failed`) |
 | `serverError` · 429 (retryable) | "Too many attempts. Please wait [N seconds, from `Retry-After`] and try again."; button reads "Try again" | same message | none (API logs only) |
-| `serverError` · 5xx, or a 422 naming no known field | "Something went wrong on our side. Please try again."; "Try again" | same message | none (server emits `signup_failed`) |
+| `serverError` · 5xx, or a 422 naming no known field | "Something went wrong on our side. Please try again."; "Try again" | same message | none if our API answered (the server emits `signup_failed`); client `signup_failed` (`source: server`) if the platform answered (no error envelope) |
 | `networkError` | "Connection problem. Check your connection and try again."; "Try again"; input kept | same message | client `signup_failed` (`network`) |
 
 ## Idempotency-Key policy

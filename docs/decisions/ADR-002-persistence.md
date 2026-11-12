@@ -86,8 +86,8 @@ create table idempotency_keys (
 ## AI-found: `request_in_progress` is unreachable with this design
 Because the key claim and the user insert share one transaction, a concurrent request with the same key blocks on the primary-key
 conflict until the first commits or rolls back, then sees the committed row (replay) or none. There is no visible "in progress"
-state, in either adapter. The contract's `request_in_progress` (409) code is therefore dead. Under the "no dead code" rule it should be
-removed from `src/contracts/users.ts` and `api-contract.md`; **pending my confirmation** (not changed by this ADR).
+state, in either adapter. The contract's `request_in_progress` (409) code is therefore dead. **Resolved 2026-11-12: removed from
+`src/contracts/users.ts` and `api-contract.md` (owner confirmed, "no dead code").**
 A lock-wait timeout would instead surface as a 5xx/retry and is worth a test.
 
 ## What would change this at FX Replay production scale
@@ -101,3 +101,7 @@ A lock-wait timeout would instead surface as a 5xx/retry and is worth a test.
 Claude drafted this document from my decision and added the transaction/idempotency analysis, the `CHECK`-constraint refinement
 of "unique index on normalized email", and the dead-code finding above. I made the persistence choice and the schema requirements.
 Nothing here is validated by running code yet; the shared contract tests (P3.1) and the Postgres CI run are the validation.
+
+## Amendment 2026-11-12 (independent API review)
+- **Replay returns the original response, not current state.** `idempotency_keys` gains `response jsonb not null` (the 201 body as first sent); a replay returns it verbatim. `user_id` stays for the foreign key. The memory adapter stores the same snapshot. Reason: after a PATCH, returning the current user to a request that asked to create a different email was wrong, and contradicted the contract ("original body").
+- **Cursors are validated before they can reach SQL** (ISO datetime + UUID), so a tampered cursor is a 422, never a database error.

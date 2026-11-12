@@ -7,8 +7,6 @@ interface Props {
   variant: Variant;
 }
 const { variant } = Astro.props;
-// TEMP(G2): build-time switch so client:load and client:idle can be measured; removed once chosen.
-const hydrate = process.env.HYDRATE_MODE === 'load' ? 'load' : 'idle';
 ---
 
 <section class="relative isolate overflow-hidden" aria-labelledby="hero-title">
@@ -22,12 +20,7 @@ const hydrate = process.env.HYDRATE_MODE === 'load' ? 'load' : 'idle';
         Replay historical forex price action and practise your trading strategy at your own pace.
       </p>
     </div>
-    {
-      hydrate === 'load' ? (
-        <SignupForm client:load variant={variant} signinUrl={PUBLIC_SIGNIN_URL} />
-      ) : (
-        <SignupForm client:idle variant={variant} signinUrl={PUBLIC_SIGNIN_URL} />
-      )
-    }
+    <!-- client:load, chosen from measurements by a pre-registered rule (ADR-006): the hero form must be live ASAP. -->
+    <SignupForm client:load variant={variant} signinUrl={PUBLIC_SIGNIN_URL} />
   </div>
 </section>

@@ -33,6 +33,11 @@
   --font-body: var(--font-nunito-sans);
 }
 
+/* After a successful signup the final CTA would point at a form that no longer exists: hide it (a11y audit). */
+html[data-signup='complete'] [data-final-cta] {
+  display: none;
+}
+
 @layer base {
   html {
     background: var(--bg-primary);
