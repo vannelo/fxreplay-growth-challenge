@@ -1,4 +1,5 @@
 import { ErrorEnvelope, IDEMPOTENCY_HEADER, VISITOR_ID_HEADER } from '../../contracts/users';
+import { readCookie } from '../../lib/cookies';
 import type { Outcome, Payload } from './signup-machine';
 
 export const REQUEST_TIMEOUT_MS = 15_000;
@@ -48,8 +49,5 @@ export async function createUser(
 
 /** `fxr_vid` (ADR-007), if the browser has it. Sent as X-Visitor-Id; the server treats it as optional. */
 export function readVisitorId(cookie: string = document.cookie): string | undefined {
-  return cookie
-    .split('; ')
-    .find((entry) => entry.startsWith('fxr_vid='))
-    ?.slice('fxr_vid='.length);
+  return readCookie('fxr_vid', cookie);
 }

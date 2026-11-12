@@ -25,6 +25,9 @@
 - **Server attribution (contract change):** the signup island sends `X-Visitor-Id: <fxr_vid>`. The contract validates it with zod (`VisitorId`: a UUID, else treated as absent). It never blocks a signup. The server reads the **variant from the `fxr_variant` cookie only**, never from the body or a header.
 - **No PII in events.** Email and name never appear in event properties. The allow-list is enforced in `src/analytics/events.ts` and by a CI test (see analytics plan).
 
+## Consent gate (amended 2026-11-12, P5)
+With no banner, "consent denied" is the browser's **Global Privacy Control** signal: `navigator.globalPrivacyControl` in the page and `Sec-GPC: 1` on requests. If either is set, **nothing is sent from the browser or the server** (the signup itself still works). The default is **allowed**, which is the same legal assumption this ADR already carries. The check is one function (`gpcOptedOut` in `src/analytics/payload.ts`) so a CMP can replace it. Verified by unit tests on both emitters and an e2e test that sets GPC and asserts zero requests reach the capture sink.
+
 ## Trade-offs accepted
 - **Legal risk is accepted knowingly, not solved.** Whether a first-party bucketing/analytics cookie is "strictly necessary" depends on jurisdiction and counsel. If legal says no, the production fallback is below.
 - **Both identifiers are client-controlled.** A user can edit `fxr_vid` or `fxr_variant`, or send any `X-Visitor-Id`. The result can only pollute analytics attribution (nothing is authorized on it). v1 leaves the cookies unsigned. Production would sign the variant (HMAC) and treat the visitor id as untrusted.

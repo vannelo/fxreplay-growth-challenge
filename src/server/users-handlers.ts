@@ -11,6 +11,8 @@ import {
   UserIdParam,
   fieldErrorsFrom,
 } from '../contracts/users';
+import type { FieldName } from '../analytics/events';
+import type { ServerAnalytics } from '../analytics/server';
 import { ApiError, errorResponse, withErrors } from './errors';
 import type { UserRepository } from './user-repository';
 
@@ -63,9 +65,13 @@ const methodNotAllowed =
   async () =>
     errorResponse('method_not_allowed', 'Method not allowed', undefined, { Allow: allow });
 
+/** Failures the signup form can cause and analytics counts. 400/413/415/405/404 and 429 are deliberately NOT events. */
+const COUNTED_FAILURES = new Set(['email_taken', 'validation_error', 'idempotency_key_reuse', 'internal_error']);
+const isField = (key: string): key is FieldName => key === 'email' || key === 'name';
+
 /* ---------- handlers ---------- */
 
-export function createUsersHandlers(repo: UserRepository) {
+export function createUsersHandlers(repo: UserRepository, analytics: ServerAnalytics) {
   const POST = withErrors<HandlerContext>(async ({ request }) => {
     const raw = await readJsonBody(request);
     const body = CreateUserBody.safeParse(raw);
@@ -78,6 +84,11 @@ export function createUsersHandlers(repo: UserRepository) {
     });
     switch (result.kind) {
       case 'created':
+        // The conversion: server-confirmed, once, after the commit. A replay (below) is NOT counted again.
+        analytics.capture(
+          { name: 'signup_succeeded', props: { user_id: result.user.id, name_provided: result.user.name !== null } },
+          request,
+        );
         return Response.json({ data: result.user }, { status: 201, headers: { Location: `/api/users/${result.user.id}` } });
       case 'replayed':
         return Response.json(
@@ -89,6 +100,16 @@ export function createUsersHandlers(repo: UserRepository) {
       case 'email_taken':
         throw new ApiError('email_taken', 'An account with this email already exists');
     }
+  }, ({ code, fields }, { request }) => {
+    if (!COUNTED_FAILURES.has(code)) return;
+    const failedFields = Object.keys(fields ?? {}).filter(isField);
+    analytics.capture(
+      {
+        name: 'signup_failed',
+        props: { source: 'server', error_code: code, retryable: code === 'internal_error', ...(failedFields.length ? { failed_fields: failedFields } : {}) },
+      },
+      request,
+    );
   });
 
   const PATCH = withErrors<HandlerContext>(async ({ request, params }) => {

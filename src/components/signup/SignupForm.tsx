@@ -1,4 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from 'preact/hooks';
+import { track } from '../../analytics/browser';
+import type { FieldName as AnalyticsField } from '../../analytics/events';
+import { claimLandingView, landingProps } from '../../analytics/landing';
 import type { Variant } from '../../lib/experiment';
 import { createUser, readVisitorId } from './signup-client';
 import { MESSAGES, announcement, initialState, isRetryable, reduce, type FieldName } from './signup-machine';
@@ -20,6 +23,8 @@ export default function SignupForm({ variant, signinUrl }: Props) {
   const emailRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const successRef = useRef<HTMLHeadingElement>(null);
+  const startedRef = useRef(false); // signup_started fires once per page view
+  const postsRef = useRef(0); // POSTs dispatched (the `attempt` property); not state.attempt, which also counts invalid submits
 
   const busy = state.status === 'submitting' || state.status === 'validating';
   const retry = isRetryable(state);
@@ -32,11 +37,17 @@ export default function SignupForm({ variant, signinUrl }: Props) {
     }
     performance.mark('signup-hydrated'); // TEMP(G2): removed once the hydration directive is chosen from measurements
     setReady(true);
+    // landing_viewed: funnel entry AND experiment exposure. Emitted from the island because it is the only JS on the page.
+    if (claimLandingView()) {
+      track('landing_viewed', landingProps({ search: location.search, referrer: document.referrer, pageOrigin: location.origin, viewportWidth: innerWidth }));
+    }
   }, []);
 
   // Send the request when the machine enters `submitting`. The machine decided the key; this only performs I/O.
   useEffect(() => {
     if (state.status !== 'submitting' || !state.pending) return;
+    postsRef.current += 1;
+    track('signup_submitted', { attempt: postsRef.current, name_provided: state.pending.payload.name !== undefined });
     let active = true;
     void createUser(state.pending.payload, state.pending.key, readVisitorId()).then((outcome) => {
       if (active) dispatch({ type: 'outcome', outcome });
@@ -45,6 +56,20 @@ export default function SignupForm({ variant, signinUrl }: Props) {
       active = false;
     };
   }, [state.status, state.pending]);
+
+  // Client-side failures only: validation (per attempt, even if identical) and network. Server failures are emitted by the server.
+  useEffect(() => {
+    if (state.status === 'fieldError' && state.errorSource === 'client') {
+      track('signup_failed', {
+        source: 'client_validation',
+        error_code: 'validation_error',
+        failed_fields: Object.keys(state.errors) as AnalyticsField[],
+        retryable: false,
+      });
+    } else if (state.status === 'networkError') {
+      track('signup_failed', { source: 'network', error_code: 'network_error', retryable: true });
+    }
+  }, [state.status, state.attempt]);
 
   // Focus management: first invalid field on failure; the confirmation heading on success.
   useEffect(() => {
@@ -108,6 +133,11 @@ export default function SignupForm({ variant, signinUrl }: Props) {
           noValidate
           aria-label="Create your free account"
           onSubmit={onSubmit}
+          onFocusIn={() => {
+            if (startedRef.current) return;
+            startedRef.current = true;
+            track('signup_started', { fields_shown: variant === 'control' ? ['email', 'name'] : ['email'] });
+          }}
           class="rounded-2xl border border-border-secondary bg-card p-6 sm:p-8"
         >
           <div>

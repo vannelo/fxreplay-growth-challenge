@@ -38,6 +38,8 @@ export interface SignupState {
   failure: Failure | null;
   retryAfter: number | null;
   pending: Pending | null;
+  /** Where the current `fieldError` came from. Analytics counts only client ones (the server emits its own). */
+  errorSource: 'client' | 'server' | null;
   /** Counts validated submit attempts, so the UI can react to a repeat of the SAME failure (focus + re-announce). */
   attempt: number;
 }
@@ -63,6 +65,7 @@ export const initialState: SignupState = {
   failure: null,
   retryAfter: null,
   pending: null,
+  errorSource: null,
   attempt: 0,
 };
 
@@ -118,7 +121,7 @@ export function reduce(state: SignupState, action: Action): SignupState {
       if (state.status !== 'validating') return state;
       const parsed = CreateUserBody.safeParse(toInput(state.values));
       if (!parsed.success) {
-        return { ...state, attempt: state.attempt + 1, status: 'fieldError', errors: pickFieldErrors(fieldErrorsFrom(parsed.error)) };
+        return { ...state, attempt: state.attempt + 1, status: 'fieldError', errorSource: 'client', errors: pickFieldErrors(fieldErrorsFrom(parsed.error)) };
       }
       const payload = parsed.data;
       const reuse = state.pending?.reusable === true && samePayload(state.pending.payload, payload);
@@ -126,6 +129,7 @@ export function reduce(state: SignupState, action: Action): SignupState {
         ...state,
         attempt: state.attempt + 1,
         status: 'submitting',
+        errorSource: null,
         errors: {},
         pending: { key: reuse ? state.pending!.key : action.newKey, payload, reusable: false },
       };
@@ -142,7 +146,7 @@ export function reduce(state: SignupState, action: Action): SignupState {
           return { ...state, status: 'serverError', failure: 'email_taken', errors: { email: MESSAGES.emailTaken } };
         case 'validation': {
           const errors = pickFieldErrors(outcome.fields);
-          if (Object.keys(errors).length > 0) return { ...state, status: 'fieldError', errors };
+          if (Object.keys(errors).length > 0) return { ...state, status: 'fieldError', errorSource: 'server', errors };
           // A 422 we cannot map to a field is a client/contract bug: say so generically, and use a fresh key next time.
           return { ...state, status: 'serverError', failure: 'unavailable' };
         }

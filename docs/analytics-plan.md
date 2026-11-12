@@ -2,7 +2,7 @@
 
 Source of truth for events. The typed registry `src/analytics/events.ts` mirrors this file; `/tracking-audit` checks code against it.
 Consent/identity model: [ADR-007](decisions/ADR-007-consent-and-visitor-id.md). Conversion is server-confirmed: ADR-005 (see [00-process.md](00-process.md)).
-Tool: PostHog (events, funnels). Experiment: `signup_fields`, arms `control` (email + name) and `email_only`.
+Tool: PostHog (events, funnels) behind a typed thin HTTP client, not `posthog-js` ([ADR-003](decisions/ADR-003-analytics-client.md)). Consent gate: Global Privacy Control, [ADR-007](decisions/ADR-007-consent-and-visitor-id.md). Experiment: `signup_fields`, arms `control` (email + name) and `email_only`.
 
 ## Context attached to every event
 Registered once (client super-properties; read from cookies server-side), so intermediate events do not repeat them.
@@ -26,7 +26,7 @@ Owner for all: **Growth Engineering**. `?` = optional. Property values are limit
 | `signup_succeeded` | **server** | `POST /api/users` first-time 201, after DB commit. **Not** on replay (`Idempotent-Replayed: true`). | `user_id` (uuid, not PII), `name_provided` (boolean) | **Primary conversion.** `$insert_id` = `user_id`. Properties are built explicitly, never from the `User` object. |
 
 Removed from the draft, with reasons: `cta_clicked` (the form is in the hero, visible on load, so `signup_started` is the intent step), `experiment_exposed` (same moment as `landing_viewed`; two events for one fact), `idempotency_key` (per-attempt id, not a user key), `variant` as a repeated per-event property (now context).
-One SDK built-in is kept: web vitals (LCP) for the guardrail below. **To verify at implementation:** how PostHog's `capture_performance` / web-vitals capture behaves with persistence disabled.
+**Transport (implemented):** browser events go out as one ordered `/batch/` request (idle ≤ 2 s, first interaction, or `pagehide`); the server emits `signup_succeeded` and server-side `signup_failed` to `/i/v0/e/` through `waitUntil`. The server sends nothing for 400, 413, 415, 405, 404 or 429, and no `signup_failed` when there is no visitor id. No session id is sent (cookieless; `distinct_id` is `fxr_vid`). Every event also carries `$lib` (`fxr-web` / `fxr-server`) and `$process_person_profile: false`. **Web vitals are NOT collected** by this client: the LCP guardrail below needs a separate source (lab runs now, field RUM later).
 
 ## Funnel
 `landing_viewed` → `signup_started` → `signup_submitted` → `signup_succeeded`
@@ -47,12 +47,12 @@ Counted as **unique `distinct_id`s**, broken down by `variant`. Conversion windo
 |---|---|---|
 | Server conversion = database | Daily: count `signup_succeeded` vs rows created in `users`. They should match; a gap means dropped or double-fired events. | Production, scheduled |
 | Sample ratio mismatch | Chi-square of `landing_viewed` counts per arm against the intended split. A mismatch invalidates the experiment, whatever the metric says. | Before reading any result |
-| Fires exactly once | Playwright: one full flow → exactly one `landing_viewed`, `signup_started`, `signup_submitted`, `signup_succeeded` on the capture sink; back/forward and reload don't re-fire the entry or conversion event. Double-click submit → one POST. | CI |
+| Fires exactly once | **Implemented** (`tests/e2e/analytics.spec.ts`, against a local capture sink): one full flow → exactly one `landing_viewed`, `signup_started`, `signup_submitted`, `signup_succeeded` on the capture sink; back/forward and reload don't re-fire the entry or conversion event. Double-click submit → one POST. | CI |
 | Replay safe | API test: same key + body twice → one `signup_succeeded`. | CI |
 | No PII | CI test: no event property value matches an email regex or equals the submitted name; registry rejects properties not in the allow-list (no spreading `User`). | CI |
-| Nothing stored by the SDK | Playwright: after a full flow, no PostHog cookie or localStorage key exists. Only `fxr_vid` and `fxr_variant`. | CI |
+| Nothing stored by analytics | Playwright: after a full flow, only `fxr_vid` and `fxr_variant` cookies exist and localStorage/sessionStorage are empty. | CI |
 | Typed events only | Events exist only in `events.ts`; `/tracking-audit` diffs code against this file. | CI / pre-merge |
 | Internal and bot traffic | A documented PostHog filter process, **not an event property**: (1) one PostHog project per env (`dev`/`test`/`preview` never write to prod); (2) in prod, PostHog's internal/test-user filter set to the team's IP ranges; (3) review the bot-looking traffic (known-bot user agents, zero-dwell submits) before reading any experiment. | Setup + before each readout |
 
 ## Not built (next, with more time)
-Honeypot or minimum-time-to-submit check against bot signups; signed variant cookie; transactional outbox for the conversion event (ADR-002); an app-side activation event; consent-flag gating when a CMP exists (ADR-007).
+A first-party reverse proxy for the ingestion host (ad-blocker recovery); web-vitals collection for the LCP guardrail; retries/outbox for events; verification against a real PostHog project (CORS of the browser transport, `$insert_id` dedupe); honeypot or minimum-time-to-submit check against bot signups; signed variant cookie; transactional outbox for the conversion event (ADR-002); an app-side activation event; consent-flag gating when a CMP exists (ADR-007).

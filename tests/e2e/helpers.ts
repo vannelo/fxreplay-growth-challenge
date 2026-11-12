@@ -7,17 +7,21 @@ export type Arm = 'control' | 'email_only';
 export const uniqueEmail = () => `e2e-${crypto.randomUUID()}@example.com`;
 
 /** Make this browser context a visitor already assigned to `arm` (otherwise the arm is random). */
-export const assignArm = (page: Page, arm: Arm) =>
-  page.context().addCookies([
-    { name: 'fxr_vid', value: crypto.randomUUID(), url: ORIGIN },
+export async function assignArm(page: Page, arm: Arm): Promise<string> {
+  const vid = crypto.randomUUID();
+  await page.context().addCookies([
+    { name: 'fxr_vid', value: vid, url: ORIGIN },
     { name: 'fxr_variant', value: arm, url: ORIGIN },
   ]);
+  return vid;
+}
 
 /** Open the landing page as a visitor assigned to `arm`, and wait until the island is hydrated. */
-export async function openLanding(page: Page, arm: Arm = 'control') {
-  await assignArm(page, arm);
-  await page.goto('/');
+export async function openLanding(page: Page, arm: Arm = 'control', query = ''): Promise<string> {
+  const vid = await assignArm(page, arm);
+  await page.goto(`/${query}`);
   await expect(submitButton(page)).toBeEnabled(); // enabled only once hydrated
+  return vid;
 }
 
 export const submitButton = (page: Page) => page.locator('#signup form button[type="submit"]');

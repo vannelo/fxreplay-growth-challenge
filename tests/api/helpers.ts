@@ -9,6 +9,7 @@ import {
   type User,
 } from '../../src/contracts/users';
 import { MemoryUserRepository } from '../../src/server/memory-user-repository';
+import { noopAnalytics, type ServerAnalytics } from '../../src/analytics/server';
 import { createUsersHandlers } from '../../src/server/users-handlers';
 import type { UserRepository } from '../../src/server/user-repository';
 
@@ -20,9 +21,9 @@ export function makeClock(startMs = Date.UTC(2026, 0, 1)) {
   return () => new Date((t += 1000));
 }
 
-export function makeApi(repo?: UserRepository) {
+export function makeApi(repo?: UserRepository, analytics: ServerAnalytics = noopAnalytics) {
   const repository = repo ?? new MemoryUserRepository({ now: makeClock() });
-  const h = createUsersHandlers(repository);
+  const h = createUsersHandlers(repository, analytics);
   return {
     repository,
     create: (req: Request) => h.collection.POST({ request: req, params: {} }),

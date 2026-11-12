@@ -17,7 +17,9 @@
       "Bash(curl -s localhost:4422/)",
       "Bash(curl -s -m 10 -o /dev/null -w \"GET localhost:4399/ -> %{http_code}\\\\n\" localhost:4399/)",
       "Bash(curl -s -m 10 localhost:4399/)",
-      "Bash(ps -p 66417 -o pid,etime,command)"
+      "Bash(ps -p 66417 -o pid,etime,command)",
+      "Bash(python3 -I -c \"import json;d=json.load\\(open\\('package.json'\\)\\);print\\({k:v for k,v in d.get\\('dependencies',{}\\).items\\(\\)}\\);print\\(list\\(d['scripts']\\)\\)\")",
+      "WebFetch(domain:posthog.com)"
     ]
   }
 }

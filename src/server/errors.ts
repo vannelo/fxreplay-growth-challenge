@@ -23,13 +23,21 @@ export function errorResponse(
 }
 
 /** The only try/catch around handlers. Unknown errors are logged server-side and never reach the client. */
-export function withErrors<Ctx>(handler: (ctx: Ctx) => Promise<Response>): (ctx: Ctx) => Promise<Response> {
+export function withErrors<Ctx>(
+  handler: (ctx: Ctx) => Promise<Response>,
+  /** Observes every mapped failure (e.g. analytics). Must not throw; it cannot change the response. */
+  onError?: (failure: { code: ErrorCode; fields?: Record<string, string[]> | undefined }, ctx: Ctx) => void,
+): (ctx: Ctx) => Promise<Response> {
   return async (ctx) => {
     try {
       return await handler(ctx);
     } catch (error) {
-      if (error instanceof ApiError) return errorResponse(error.code, error.message, error.fields, error.headers);
+      if (error instanceof ApiError) {
+        onError?.({ code: error.code, fields: error.fields }, ctx);
+        return errorResponse(error.code, error.message, error.fields, error.headers);
+      }
       console.error('Unhandled error in Users API', error);
+      onError?.({ code: 'internal_error' }, ctx);
       return errorResponse('internal_error', 'Something went wrong. Please try again.');
     }
   };

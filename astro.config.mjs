@@ -37,6 +37,10 @@ export default defineConfig({
     schema: {
       // Where the 409 "sign in instead" link points. Unset until the owner supplies it (the UI shows a visible TODO).
       PUBLIC_SIGNIN_URL: envField.string({ context: 'client', access: 'public', optional: true }),
+      // Analytics (ADR-003/007). The PostHog project key is public by design. Unset key = analytics is a clean no-op.
+      PUBLIC_POSTHOG_KEY: envField.string({ context: 'client', access: 'public', optional: true }),
+      PUBLIC_POSTHOG_HOST: envField.string({ context: 'client', access: 'public', default: 'https://us.i.posthog.com' }),
+      PUBLIC_APP_ENV: envField.enum({ context: 'client', access: 'public', values: ['prod', 'preview', 'dev', 'test'], default: 'dev' }),
     },
   },
 });
