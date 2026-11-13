@@ -15,8 +15,9 @@ export default defineConfig({
       url: ORIGIN,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
-      // Analytics points at the sink (build-time public vars, read by browser and server).
-      env: { E2E: '1', PUBLIC_POSTHOG_KEY: 'phc_test', PUBLIC_POSTHOG_HOST: SINK_ORIGIN, PUBLIC_APP_ENV: 'test' },
+      // Analytics points at the sink (build-time public vars, read by browser and server). DATABASE_URL is pinned
+      // empty so e2e stays on the in-memory store (deterministic) even when a developer's .env points at Neon.
+      env: { E2E: '1', PUBLIC_POSTHOG_KEY: 'phc_test', PUBLIC_POSTHOG_HOST: SINK_ORIGIN, PUBLIC_APP_ENV: 'test', DATABASE_URL: '' },
     },
   ],
   projects: [{ name: 'mobile-chromium', use: { ...devices['Pixel 7'] } }, { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } }],

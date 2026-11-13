@@ -58,6 +58,8 @@ export default defineConfig({
       // Analytics (ADR-003/007). The PostHog project key is public by design. Unset key = analytics is a clean no-op.
       PUBLIC_POSTHOG_KEY: envField.string({ context: 'client', access: 'public', optional: true }),
       PUBLIC_POSTHOG_HOST: envField.string({ context: 'client', access: 'public', default: 'https://us.i.posthog.com' }),
+      // Postgres connection string (ADR-002). Server-only secret. Unset = in-memory store, which repository.ts refuses in prod/preview.
+      DATABASE_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
       // Default 'prod': a deploy that forgets to set it must not tag events as dev nor run the throwing (strict) guard.
       PUBLIC_APP_ENV: envField.enum({ context: 'client', access: 'public', values: ['prod', 'preview', 'dev', 'test'], default: 'prod' }),
     },

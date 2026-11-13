@@ -40,7 +40,7 @@ Emission is best-effort and never changes the HTTP response: an analytics failur
 ## Decisions baked in (flag if you disagree)
 - **`X-Visitor-Id` is optional and never fails the request**, because analytics must not be able to block a signup. (AI-made decision: revert to required by moving it into `CreateUserHeaders`.)
 - **Fields: `email` required, `name` optional.** No password (no auth system). Supports both experiment arms (email-only vs email+name) with no schema change.
-- **Idempotency-Key is required on POST**, 16–128 URL-safe chars. Same key+payload replays the first response; same key+different payload is 422; a concurrent duplicate waits for the first and replays. The email-unique rule remains the backstop for a *different* key.
+- **Idempotency-Key is required on POST**, 16–128 URL-safe chars. Same key+payload replays the first response; same key+different payload is 422; a concurrent duplicate waits for the first and replays. The email-unique rule remains the backstop for a *different* key. Keys expire after **24 h** on Postgres (the memory store keeps them for the process lifetime): an expired key is treated as new, so a late retry of a successful create gets 409 `email_taken`, not a replay.
 - **422 for schema failures, 400 only for unparseable JSON.**
 - **PATCH is `strictObject`**: immutable fields error instead of being silently ignored. `name: null` clears the name. `email` is updatable (re-checked for uniqueness).
 - **`email_taken` reveals that an account exists** (user enumeration). Accepted for UX on a signup form; mitigated by rate limit. Production would move to email-verification flow.

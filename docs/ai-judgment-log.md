@@ -20,6 +20,34 @@ Copy the template below, paste at the top of the entries section, fill it in rig
 ```
 
 ## Entries
+### 2026-11-12 23:30 — Postgres (Neon) adapter: built, raced on the real database, reviewed by a second agent
+- **Phase / agent:** pre-deploy, main thread (plan mode) → `api-reviewer` (independent)
+- **Delegated:** I created the Neon database and asked whether the in-memory storage limitation could be fixed before deploying. The AI planned and built the ADR-002 adapter and the guard.
+- **Output (summary):**
+  - Neon over HTTP with single-statement writes. This settles ADR-002's open driver question from Neon's current docs.
+  - A contract suite that runs against memory, Postgres-on-PGlite and Postgres-on-Neon.
+  - `db:migrate`.
+  - The guard: prod/preview without `DATABASE_URL` refuse to serve the API.
+- **Mistakes caught by verification, not by reading:**
+  - **Leftover test rows.** A sabotage run left 10 test rows in my Neon database. `Promise.all` rejected early, cleanup ran while writes were still in flight, and the users delete then failed on the foreign key. Found by counting rows afterwards. Fixed with `allSettled` and a single-statement cleanup, then re-proved: the database was empty after a second sabotage run.
+  - **Guard wording.** The plan said the guard fails "at startup". Running a real production build showed it fails on the first API request, because routes load lazily, while the landing page still returns 200. The docs were corrected to say that.
+- **Independent review (`api-reviewer`):** no correctness bug in the race logic.
+  - **Two Mediums, fixed:**
+    - Expired key rows, each holding a copy of an email, were never purged, and the foreign key blocked erasure. Fixed: every create purges expired rows through an index, and the foreign key is now `ON DELETE CASCADE`.
+    - The concurrent key-conflict branch was unreachable in CI. Fixed with injected-failure tests, plus a test pinning the constraint names to the real schema.
+  - **Lows fixed:** uppercase user ids (lowercased in the contract), the migration script echoing the connection string on error, and the expiry behaviour documented in the API contract.
+  - **Lows left, with reasons:**
+    - No fetch timeout on the Neon client.
+    - A replay after a lost 201 doesn't re-emit the conversion. That is the analytics plan's "never on replay" rule, and the outbox is the real fix.
+    - Bare `astro dev` defaults to `prod` and hits the guard; `npm run dev` sets `dev`.
+- **Validation:**
+  - Neon race tests: 10 parallel creates per case give exactly 1 `created` plus 9 `replayed` / `email_taken` / `key_reuse`, with no orphans.
+  - Sabotage: S1–S3 each fail tests, and S2/S3 now fail without Neon too.
+  - Persistence survives a dev-server restart (409 on the second signup).
+  - `astro check` 0 errors, 257 Vitest tests pass, 94 Playwright tests pass. E2E is pinned to memory, and Neon was empty afterwards.
+- **My judgment:** _pending: owner to confirm the deferred Lows._ The Neon password was pasted into the chat and must be rotated after verification.
+- **Commit:** not yet committed
+
 ### 2026-11-12 15:05 — Owner decisions on the last open items
 - **Phase / agent:** Phase 5, main thread. The AI asked; I decided.
 - **My judgment:**

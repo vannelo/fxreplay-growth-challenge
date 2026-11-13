@@ -3,31 +3,13 @@
  * and cold starts wipe it. Idempotency keys never expire here (process lifetime); the Postgres adapter expires them at 24h.
  * Every method is synchronous inside (no `await` between check and write), which is what makes create atomic.
  */
-import * as z from 'zod/mini';
 import type { CreateUserBody, ListUsersQuery, UpdateUserBody, User } from '../contracts/users';
+import { decodeCursor, encodeCursor, type Position } from './cursor';
 import type { CreateResult, IdempotencyContext, ListResult, UpdateResult, UserRepository } from './user-repository';
 
 export interface MemoryUserRepositoryOptions {
   now?: () => Date;
   newId?: () => string;
-}
-
-interface Position {
-  createdAt: string;
-  id: string;
-}
-
-const CURSOR_PATTERN = /^([^|]+)\|([^|]+)$/;
-const CursorParts = z.object({ createdAt: z.iso.datetime(), id: z.uuid() });
-
-const encodeCursor = ({ createdAt, id }: Position) => Buffer.from(`${createdAt}|${id}`, 'utf8').toString('base64url');
-
-function decodeCursor(cursor: string): Position | undefined {
-  const match = CURSOR_PATTERN.exec(Buffer.from(cursor, 'base64url').toString('utf8'));
-  // Both halves must be real values (a date that exists, a UUID), not just the right shape: a Postgres adapter
-  // would otherwise turn "2026-99-99" into a 500 (audit finding).
-  const parts = match && CursorParts.safeParse({ createdAt: match[1], id: match[2] });
-  return parts?.success ? parts.data : undefined;
 }
 
 /** Newest first; id breaks ties between users created in the same millisecond. 0 only for the same position. */

@@ -1,7 +1,6 @@
-import { MemoryUserRepository } from './memory-user-repository';
+/** Process-wide repository for the route modules (ADR-002). Selection and the production guard: `select-repository.ts`. */
+import { PUBLIC_APP_ENV } from 'astro:env/client';
+import { DATABASE_URL } from 'astro:env/server';
+import { selectRepository } from './select-repository';
 
-/**
- * Process-wide repository for the route modules. In-memory only for now: the Postgres adapter and the
- * "production build without DATABASE_URL fails at startup" guard from ADR-002 land together (not yet built).
- */
-export const usersRepository = new MemoryUserRepository();
+export const usersRepository = selectRepository(DATABASE_URL, PUBLIC_APP_ENV);

@@ -83,7 +83,10 @@ export type CreateUserResponse = z.infer<typeof CreateUserResponse>;
 
 /* ---------- PATCH /api/users/:id ---------- */
 
-export const UserIdParam = z.object({ id: z.uuid({ error: 'Invalid user id' }) });
+// Lowercased so every adapter sees one spelling: Postgres compares uuids case-insensitively, a Map does not.
+export const UserIdParam = z.object({
+  id: z.pipe(z.string().check(z.toLowerCase()), z.uuid({ error: 'Invalid user id' })),
+});
 
 /**
  * strictObject: `id`, `createdAt`, `updatedAt` (or anything unknown) is rejected with 422, never silently dropped,

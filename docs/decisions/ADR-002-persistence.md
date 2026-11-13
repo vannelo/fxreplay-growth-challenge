@@ -105,3 +105,22 @@ Nothing here is validated by running code yet; the shared contract tests (P3.1) 
 ## Amendment 2026-11-12 (independent API review)
 - **Replay returns the original response, not current state.** `idempotency_keys` gains `response jsonb not null` (the 201 body as first sent); a replay returns it verbatim. `user_id` stays for the foreign key. The memory adapter stores the same snapshot. Reason: after a PATCH, returning the current user to a request that asked to create a different email was wrong, and contradicted the contract ("original body").
 - **Cursors are validated before they can reach SQL** (ISO datetime + UUID), so a tampered cursor is a 422, never a database error.
+
+## Amendment 2026-11-12 (Postgres adapter built)
+- **Status change:** the Postgres adapter and the guard are built (`src/server/postgres-user-repository.ts`, `select-repository.ts`, `db/schema.sql`, `npm run db:migrate`), on the owner's Neon database.
+- **Driver decision (settles the open question above): Neon over HTTP, no interactive transaction.** Neon's docs: HTTP runs only non-interactive transactions; WebSocket `Pool` allows interactive ones but, on Vercel, must be created and closed inside each request. Chosen: HTTP, with every write as ONE statement (atomic on its own):
+  1. read the key (unexpired) → `replayed` / `key_reuse`;
+  2. delete this key's expired row;
+  3. one CTE: insert the user `ON CONFLICT (email) DO NOTHING`, then insert the idempotency key from the inserted row (a plain insert, so a key conflict rolls the user back too);
+  4. zero rows or a key-pkey violation → re-read the key (a concurrent request may have just committed it); nothing there → `email_taken`.
+  The unique indexes settle every race; `request_in_progress` stays unnecessary.
+- **Ids and timestamps are set by the app**, not `default now()`: same cursor format and millisecond precision as the memory adapter, and an injectable clock. Key expiry (24 h) uses the same clock and is enforced on read.
+- **Guard, precisely:** `DATABASE_URL` unset with `PUBLIC_APP_ENV` = `prod`/`preview` throws when the API route module loads. Astro loads routes lazily, so it is the **first API request** that fails (500 from Astro, no error envelope; the form treats it as a platform failure), not process start; the landing page still renders. Verified on a production build.
+- **Validation:**
+  - The same behavioural contract suite runs against memory, Postgres-on-PGlite (always, no network) and Postgres-on-Neon (`TEST_DATABASE_URL`, opt-in). Cross-connection races are proven only on Neon: 10 parallel creates per case give exactly 1 `created` plus 9 `replayed` / `email_taken` / `key_reuse`, with no orphan rows.
+  - Three sabotage mutations each failed at least one test. Two of them are caught only by the Neon race tests: PGlite has one connection and cannot race.
+  - Persistence was verified across a dev-server restart.
+- **Costs accepted:**
+  - Up to 3 round trips on a first-time create (key read, expired delete, insert).
+  - Preview deploys share the production database for this demo.
+  - The Neon race tests are not in CI (no CI yet), and they need a database URL.

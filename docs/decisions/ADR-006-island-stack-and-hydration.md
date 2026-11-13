@@ -25,7 +25,7 @@
 
 ## Trade-offs and limits (read before quoting any number)
 - Lab only: headless Chromium with CDP throttling, n = 15, one device profile. Not field data and not Lighthouse; INP is a proxy (Event Timing on scripted keystrokes, 8 ms granularity: the constant 32 ms means the proxy cannot separate the modes).
-- **"0 dead presses" is not evidence there is no dead window.** The scripted press landed ~1.35 s, after hydration (~1.31 s). The honest figure is the exposure window: the button is visible and disabled for ~0.67 s on this profile, in both modes.
+- **"0 dead presses" is not evidence there is no dead window.** The scripted press landed ~1.35 s, after hydration (~1.31 s). The honest figure is the exposure window: the button is visible and disabled for ~0.67 s on this profile in run 2, in both modes; after the P6 font fix it is ~0.8 s (hydrated ~1.47–1.5 s, LCP ~0.65 s).
 - The submit button ships `disabled` until hydrated (no pre-hydration native submit); early users see a disabled button for that window.
 - Preact is a smaller ecosystem than React; with one form that is acceptable.
 

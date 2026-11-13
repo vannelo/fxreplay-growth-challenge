@@ -19,7 +19,17 @@
       "Bash(curl -s -m 10 localhost:4399/)",
       "Bash(ps -p 66417 -o pid,etime,command)",
       "Bash(python3 -I -c \"import json;d=json.load\\(open\\('package.json'\\)\\);print\\({k:v for k,v in d.get\\('dependencies',{}\\).items\\(\\)}\\);print\\(list\\(d['scripts']\\)\\)\")",
-      "WebFetch(domain:posthog.com)"
+      "WebFetch(domain:posthog.com)",
+      "Bash(npm i *)",
+      "Bash(npx vitest *)",
+      "Bash(npm run *)",
+      "Bash(node --env-file=.env -e ' *)",
+      "Bash(perl -0pi -e 's/await Promise\\\\.all\\\\\\(/await settled\\(/g' tests/api/repository-contract.test.ts)",
+      "Bash(bash /private/tmp/claude-501/-Users-vannelo-dev-fxreplay-growth-challenge/2cb91c0c-83ec-4d90-a6b7-2bfa36cb1de6/scratchpad/sabotage-pg.sh)",
+      "Bash(grep -o \"Connection string[^\\\\\"]\\\\{0,120\\\\}\" node_modules/@neondatabase/serverless/index.mjs)",
+      "Bash(grep -o \"Connection string must.\\\\{0,300\\\\}\" node_modules/@neondatabase/serverless/index.mjs)",
+      "Bash(grep -o \".\\\\{0,200\\\\}connection string.\\\\{0,200\\\\}\" node_modules/@neondatabase/serverless/index.mjs)",
+      "Bash(grep -E \"^\\(tsx|vite-node\\)$\")"
     ]
   }
 }
